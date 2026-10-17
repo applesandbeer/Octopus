@@ -20,17 +20,15 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
   -webkit-tap-highlight-color:rgba(0,0,0,0);-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}
 #stage{position:absolute;left:0;top:0;width:1000px;height:750px;overflow:hidden;background:#fff;-webkit-transform-origin:0 0;transform-origin:0 0}
 #rotate{display:none;position:absolute;left:0;right:0;text-align:center;font-size:18px;color:#7a8597;padding:0 16px}
-.tile *,.cell *,.arrow *,.btn *,.hold *,.chip *{pointer-events:none}
+.tile *,.cell *,.arrow *,.btn *,.hold *,.chip *,.rbox *{pointer-events:none}
 .emoji{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-align:center}
 
 /* test screens */
 .topbar{background:#fff;border-bottom:1px solid #e4e4e4}
 .bartitle{text-align:center;line-height:60px;font-size:20px;color:#8c8c8c}
 .panel{border:6px solid #999;background:#ebebeb}
-.tile,.cell{background:#fff;border:2px solid #a9a9a9;border-radius:3px;text-align:center}
+.tile,.cell{background:#fff;border:2px solid #a9a9a9;border-radius:3px;text-align:center;overflow:hidden}
 .tile.sel{border-color:#1a6ee8;-webkit-box-shadow:0 0 0 5px #1a6ee8;box-shadow:0 0 0 5px #1a6ee8;background:#eef5ff}
-.tile.hint{-webkit-box-shadow:0 0 0 7px #ffb300;box-shadow:0 0 0 7px #ffb300}
-.tile.sel.hint{-webkit-box-shadow:0 0 0 4px #1a6ee8,0 0 0 10px #ffb300;box-shadow:0 0 0 4px #1a6ee8,0 0 0 10px #ffb300}
 .tile.right{-webkit-box-shadow:0 0 0 6px #2e9e44;box-shadow:0 0 0 6px #2e9e44}
 .tile.sel.right{-webkit-box-shadow:0 0 0 4px #1a6ee8,0 0 0 10px #2e9e44;box-shadow:0 0 0 4px #1a6ee8,0 0 0 10px #2e9e44}
 .lbl{font-size:20px;color:#555;line-height:28px}
@@ -42,7 +40,23 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
 .pulse{-webkit-animation:pulse 1.1s ease-in-out infinite;animation:pulse 1.1s ease-in-out infinite}
 @-webkit-keyframes pulse{0%{-webkit-transform:scale(1)}50%{-webkit-transform:scale(1.15)}100%{-webkit-transform:scale(1)}}
 @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+.nudge{-webkit-animation:nudge .45s ease-in-out;animation:nudge .45s ease-in-out}
+@-webkit-keyframes nudge{0%{-webkit-transform:scale(1)}50%{-webkit-transform:scale(1.07)}100%{-webkit-transform:scale(1)}}
+@keyframes nudge{0%{transform:scale(1)}50%{transform:scale(1.07)}100%{transform:scale(1)}}
+.hand{font-size:66px;line-height:90px;text-align:center;pointer-events:none;z-index:20;
+  -webkit-transition:left .8s ease-in-out,top .8s ease-in-out;transition:left .8s ease-in-out,top .8s ease-in-out}
+.hand.bob{-webkit-animation:bob .9s ease-in-out infinite;animation:bob .9s ease-in-out infinite}
+@-webkit-keyframes bob{0%{-webkit-transform:translateY(0)}50%{-webkit-transform:translateY(10px)}100%{-webkit-transform:translateY(0)}}
+@keyframes bob{0%{transform:translateY(0)}50%{transform:translateY(10px)}100%{transform:translateY(0)}}
+.ripple{border:5px solid rgba(26,110,232,.75);border-radius:50%;pointer-events:none;z-index:19;
+  -webkit-animation:rip .6s ease-out forwards;animation:rip .6s ease-out forwards}
+@-webkit-keyframes rip{0%{-webkit-transform:scale(.3);opacity:1}100%{-webkit-transform:scale(1.4);opacity:0}}
+@keyframes rip{0%{transform:scale(.3);opacity:1}100%{transform:scale(1.4);opacity:0}}
 .explain{font-size:20px;line-height:26px;color:#444;text-align:center}
+.rbox{border-radius:10px;text-align:center;font-size:24px;font-weight:bold;line-height:56px;cursor:pointer}
+.rbox.ans{background:#1a6ee8;color:#fff;border:2px solid #1a6ee8}
+.rbox.blank{background:#fff;color:#777;border:2px solid #b5b5b5}
+.rbox.down{opacity:.7}
 
 /* buttons and menus */
 .btn{border-radius:18px;text-align:center;color:#fff;cursor:pointer;overflow:hidden}
@@ -62,6 +76,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
 .csub{font-size:19px;opacity:.9}
 .h2{font-size:24px;font-weight:bold;color:#2b3a67}
 .setlbl{font-size:20px;color:#333;line-height:24px}
+.setlbl small{font-size:15px;color:#7a8597}
 .scroll{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;border:1px solid #e1e5ea;border-radius:12px;background:#fafbfc}
 .row{position:relative;padding:14px 18px;border-bottom:1px solid #e6e9ee;font-size:19px;line-height:26px;color:#333;cursor:pointer}
 .row.down{background:#eef3fb}
@@ -81,13 +96,15 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
 <div id="stage"></div>
 <script>
 /*
-  Puzzle Practice: a touch-screen practice app for young children.
+  Puzzle Practice: touch-screen practice for the Naglieri General Ability Tests
+  (Verbal, Nonverbal, Quantitative), the abilities test HISD uses for young children.
   Written in plain ES5 (no let/const/arrow functions) so it runs on older iPads.
 */
 (function () {
   'use strict';
 
   var W = 1000, H = 750;
+  var LIMIT_MS = 30 * 60 * 1000; // the real test allows 30 minutes per part for K-2
   var stage = document.getElementById('stage');
 
   /* ---------------- small helpers ---------------- */
@@ -100,7 +117,9 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
   }
   function indexOf(arr, v) { for (var i = 0; i < arr.length; i++) { if (arr[i] === v) return i; } return -1; }
   function without(arr, vals) { var out = [], i; for (i = 0; i < arr.length; i++) { if (indexOf(vals, arr[i]) < 0) out.push(arr[i]); } return out; }
-  function pickOther(arr, vals) { return pick(without(arr, vals)); }
+  function pickOther(arr, vals) { var w = without(arr, vals); return w.length ? pick(w) : pick(arr); }
+  function mod(a, n) { return ((a % n) + n) % n; }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
   function now() { return new Date().getTime(); }
   function box(x, y, w, h) { return 'position:absolute;left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;height:' + h + 'px;'; }
   function el(tag, cls, css, html) {
@@ -113,8 +132,17 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
   function addClass(n, c) { if (n && n.classList) n.classList.add(c); }
   function removeClass(n, c) { if (n && n.classList) n.classList.remove(c); }
   function setClass(n, c, on) { if (on) addClass(n, c); else removeClass(n, c); }
-  function clear() { stage.innerHTML = ''; }
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  // timers that belong to the current screen; cleared whenever the screen changes
+  var timers = [], ticker = null;
+  function later(fn, ms) { var t = setTimeout(fn, ms); timers.push(t); return t; }
+  function stopTimers() {
+    for (var i = 0; i < timers.length; i++) clearTimeout(timers[i]);
+    timers = [];
+    if (ticker) { clearInterval(ticker); ticker = null; }
+  }
+  function clear() { stopTimers(); stage.innerHTML = ''; }
 
   /* ---------------- saved data ---------------- */
   function load(key, def) {
@@ -123,11 +151,12 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
   function save(key, val) {
     try { window.localStorage.setItem(key, JSON.stringify(val)); return true; } catch (e) { return false; }
   }
-  var settings = load('pp.settings', {}) || {};
-  if (typeof settings.count !== 'number') settings.count = 10;
-  if (typeof settings.speak !== 'boolean') settings.speak = true;
-  if (typeof settings.practice !== 'boolean') settings.practice = true;
-  function saveSettings() { save('pp.settings', settings); }
+  var settings = load('pp.settings2', {}) || {};
+  if (indexOf([10, 20, 40], settings.count) < 0) settings.count = 40;
+  if (typeof settings.timer !== 'boolean') settings.timer = true;
+  if (typeof settings.speak !== 'boolean') settings.speak = false;
+  if (typeof settings.howto !== 'boolean') settings.howto = true;
+  function saveSettings() { save('pp.settings2', settings); }
 
   /* ---------------- fit the 1000x750 stage to any screen ---------------- */
   function fit() {
@@ -249,8 +278,10 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     if (speakTimer) { clearTimeout(speakTimer); speakTimer = null; }
     if (synth) { try { synth.cancel(); } catch (e) { /* ignore */ } }
   }
-  function say(text) {
-    if (!settings.speak || !synth || !window.SpeechSynthesisUtterance || !text) return;
+  // The real test has no spoken words, so the voice is used in tests only when a grown-up turns it on.
+  // force = true is used by Touch Practice, which always talks.
+  function say(text, force) {
+    if ((!settings.speak && !force) || !synth || !window.SpeechSynthesisUtterance || !text) return;
     var go = function () {
       speakTimer = null;
       try {
@@ -268,12 +299,15 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
   document.addEventListener('visibilitychange', function () { if (document.hidden) hush(); }, false);
 
   /* ---------------- drawings ---------------- */
-  var COLORS = { red: '#e53935', blue: '#1e63d6', green: '#2e9e44', yellow: '#f4c20d', purple: '#8e44ad', orange: '#f57c00' };
+  var COLORS = { red: '#e53935', blue: '#2f6fd6', green: '#2e9e5b', yellow: '#f6c90e', purple: '#8e44ad', orange: '#f57c00',
+    black: '#3a3a3a', white: '#ffffff' };
   var COLOR_NAMES = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
+  var NV_COLORS = ['blue', 'yellow', 'green', 'black'];
   var SHAPES_PLAIN = ['circle', 'square', 'triangle', 'star', 'heart', 'diamond', 'plus'];
   var SHAPES_TURN = ['arrow', 'halfbox', 'triangle'];
   var SHAPE_WORD = { circle: 'circle', square: 'square', triangle: 'triangle', star: 'star', heart: 'heart', diamond: 'diamond', plus: 'plus sign', arrow: 'arrow', halfbox: 'box' };
-  var NUM_WORD = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
+  var NUM_WORD = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+  var SIZE_R = { small: 17, medium: 27, big: 38 };
 
   function f2(n) { return Math.round(n * 10) / 10; }
   function pts(list, cx, cy, r) {
@@ -281,10 +315,10 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     for (i = 0; i < list.length; i += 2) s.push(f2(cx + list[i] * r) + ',' + f2(cy + list[i + 1] * r));
     return s.join(' ');
   }
-  function svgWrap(inner, px, inline) {
+  function svgWrap(inner, px, inline, viewBox) {
     var style = inline ? 'display:inline-block;vertical-align:middle;' :
       'position:absolute;left:50%;top:50%;margin-left:' + (-px / 2) + 'px;margin-top:' + (-px / 2) + 'px;';
-    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + px + '" height="' + px + '" viewBox="0 0 100 100" style="' + style + '">' + inner + '</svg>';
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + px + '" height="' + px + '" viewBox="' + (viewBox || '0 0 100 100') + '" style="' + style + '">' + inner + '</svg>';
   }
   var HEART = [-0.15, 0.75, -1, 0.25, -1, -0.3, -1, -0.75, -0.55, -0.95, -0.3, -0.95, -0.12, -0.95, 0, -0.82, 0, -0.62,
     0, -0.82, 0.12, -0.95, 0.3, -0.95, 0.55, -0.95, 1, -0.75, 1, -0.3, 1, 0.25, 0.15, 0.75, 0, 0.9];
@@ -337,7 +371,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
 
   var POS = { 1: [[50, 50]], 2: [[28, 50], [72, 50]], 3: [[50, 28], [27, 71], [73, 71]] };
   function figureSVG(fig, px, inline) {
-    var n = fig.count || 1, r = n > 1 ? 19 : (fig.size === 'small' ? 19 : 38), s = '', i, p = POS[n];
+    var n = fig.count || 1, r = n > 1 ? 19 : (SIZE_R[fig.size] || 38), s = '', i, p = POS[n];
     for (i = 0; i < p.length; i++) s += shapeSVG(fig.shape, p[i][0], p[i][1], r, fig.color, fig.fill, fig.rot || 0);
     return svgWrap(s, px, inline);
   }
@@ -365,15 +399,20 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
       '<path d="M28 13 Q33 20 28 27" fill="none" stroke="#6b7280" stroke-width="3" stroke-linecap="round"/>' +
       '<path d="M32 8 Q41 20 32 32" fill="none" stroke="#6b7280" stroke-width="3" stroke-linecap="round"/></svg>';
   }
-  function stopSVG(px) {
-    var p = [], i, a;
-    for (i = 0; i < 8; i++) { a = Math.PI / 8 + i * Math.PI / 4; p.push(Math.cos(a), Math.sin(a)); }
-    return svgWrap('<polygon points="' + pts(p, 50, 50, 48) + '" fill="#d32f2f" stroke="#fff" stroke-width="3"/>' +
-      '<polygon points="' + pts(p, 50, 50, 42) + '" fill="none" stroke="#fff" stroke-width="2"/>' +
-      '<text x="50" y="59" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="bold" font-size="25" fill="#fff">STOP</text>', px);
+  function checkSVG(px, inline) {
+    return svgWrap('<circle cx="50" cy="50" r="46" fill="#2e9e44"/><polyline points="27,52 43,68 74,35" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>', px, inline);
   }
+  function replaySVG() {
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44" style="position:absolute;left:50%;top:50%;margin-left:-22px;margin-top:-22px">' +
+      '<path d="M34 22 A12 12 0 1 1 30.5 13.5" fill="none" stroke="#555" stroke-width="4" stroke-linecap="round"/>' +
+      '<polygon points="27,6 37,13 27,19" fill="#555"/></svg>';
+  }
+  function clockSVG(px) {
+    return svgWrap('<circle cx="50" cy="50" r="42" fill="#fff" stroke="#555" stroke-width="8"/><polyline points="50,24 50,52 68,62" fill="none" stroke="#555" stroke-width="8" stroke-linecap="round"/>', px, true);
+  }
+  function qmark(h) { return '<span class="qq" style="line-height:' + h + 'px">?</span>'; }
 
-  /* ---------------- Verbal: picture classification (which one does not belong) ---------------- */
+  /* ================= VERBAL: six pictures, which one does not belong ================= */
   var FAR_FOOD = [['🍎', 'apple'], ['🍌', 'banana'], ['🍕', 'pizza'], ['🍦', 'ice cream'], ['🍓', 'strawberry']];
   var FAR_ANIMAL = [['🐕', 'dog'], ['🐘', 'elephant'], ['🐟', 'fish'], ['🐄', 'cow'], ['🐢', 'turtle']];
   var FAR_VEHICLE = [['🚗', 'car'], ['🚌', 'bus'], ['🚲', 'bicycle'], ['🚂', 'train']];
@@ -420,7 +459,20 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
         { d: 3, label: 'balls', x: [['🍊', 'orange'], ['🎈', 'balloon'], ['🍪', 'cookie'], ['🍩', 'donut']] }] },
     { id: 'body', m: [['👀', 'eyes'], ['👂', 'ear'], ['👃', 'nose'], ['👄', 'mouth'], ['👅', 'tongue']],
       v: [{ d: 1, label: 'parts of your body', x: cat(FAR_FOOD, FAR_VEHICLE, FAR_THING) },
-        { d: 2, label: 'parts of your body', x: [['👕', 'shirt'], ['👓', 'glasses'], ['🎩', 'hat']] }] }
+        { d: 2, label: 'parts of your body', x: [['👕', 'shirt'], ['👓', 'glasses'], ['🎩', 'hat']] }] },
+    { id: 'cold', m: [['⛄', 'snowman'], ['❄️', 'snowflake'], ['🍦', 'ice cream'], ['🍧', 'snow cone'], ['🐧', 'penguin']],
+      v: [{ d: 3, label: 'cold things', x: [['🔥', 'fire'], ['☀️', 'sun'], ['☕', 'hot cocoa']] }] },
+    { id: 'draw', m: [['✏️', 'pencil'], ['🖍️', 'crayon'], ['🖊️', 'pen'], ['🖌️', 'paintbrush'], ['🖋️', 'pen']],
+      v: [{ d: 1, label: 'things you draw or write with', x: cat(FAR_FOOD, FAR_ANIMAL, FAR_VEHICLE) },
+        { d: 2, label: 'things you draw or write with', x: [['📕', 'book'], ['✂️', 'scissors'], ['📏', 'ruler'], ['🎒', 'backpack']] }] },
+    { id: 'birds', m: [['🐦', 'bird'], ['🐤', 'chick'], ['🐧', 'penguin'], ['🐓', 'rooster'], ['🕊️', 'dove']],
+      v: [{ d: 2, label: 'birds', x: cat(FAR_VEHICLE, FAR_THING, FAR_FOOD) },
+        { d: 3, label: 'birds', x: [['✈️', 'airplane'], ['🐝', 'bee'], ['🎈', 'balloon']] }] },
+    { id: 'sky', m: [['🌙', 'moon'], ['⭐', 'star'], ['☀️', 'sun'], ['☁️', 'cloud'], ['🌈', 'rainbow'], ['⚡', 'lightning']],
+      v: [{ d: 1, label: 'things you see in the sky', x: cat(FAR_FOOD, FAR_ANIMAL, FAR_THING) },
+        { d: 2, label: 'things you see in the sky', x: [['🌲', 'tree'], ['🏠', 'house'], ['🌷', 'tulip'], ['🌊', 'ocean wave']] }] },
+    { id: 'round', m: [['⚽', 'soccer ball'], ['🏀', 'basketball'], ['🍊', 'orange'], ['🌕', 'full moon'], ['🍪', 'cookie']],
+      v: [{ d: 3, label: 'round things', x: [['📕', 'book'], ['⭐', 'star'], ['🍌', 'banana'], ['🔑', 'key']] }] }
   ];
 
   function vGenerate(diff, ctx) {
@@ -445,21 +497,30 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     if (ctx.recent.length > 3) ctx.recent.shift();
     return { kind: 'verbal', diff: diff, pics: pics, answer: answer, label: v.label, odd: odd[1], key: catg.id + odd[0] };
   }
-  function vExplain(it) { return 'The ' + it.odd + ' does not belong. The others are all ' + it.label + '.'; }
 
-  /* ---------------- Nonverbal: figure matrices (2 x 2 with a missing box) ---------------- */
+  /* ================= NONVERBAL ================= */
   function copyFig(f) { return { shape: f.shape, color: f.color, size: f.size, fill: f.fill, count: f.count, rot: f.rot || 0 }; }
   function figKey(f) {
     var turn = indexOf(SHAPES_TURN, f.shape) >= 0;
-    return [f.shape, f.color, f.count > 1 ? 'big' : f.size, f.shape === 'halfbox' ? 'solid' : f.fill, f.count, turn ? ((f.rot % 360) + 360) % 360 : 0].join('|');
+    return [f.shape, f.color, f.count > 1 ? 'big' : f.size, f.shape === 'halfbox' ? 'solid' : f.fill, f.count, turn ? mod(f.rot || 0, 360) : 0].join('|');
   }
+  function pickFive(answerItem, cands, keyFn, need) {
+    var seen = {}, wrong = [], i, k;
+    seen[keyFn(answerItem)] = 1;
+    for (i = 0; i < cands.length && wrong.length < (need || 4); i++) {
+      k = keyFn(cands[i]);
+      if (!seen[k]) { seen[k] = 1; wrong.push(cands[i]); }
+    }
+    return wrong;
+  }
+
+  /* --- 2x2 analogy (like the slide's example) --- */
   var NV_PLAN = {
     1: { col: ['color', 'size', 'fill', 'shape'], row: ['shape', 'color'] },
     2: { col: ['count', 'fill', 'size', 'shape', 'color', 'rot180'], row: ['shape', 'color', 'size'] },
     3: { col: ['rot90', 'count', 'colorsize', 'rot180', 'shapefill'], row: ['color', 'shape', 'fill'] }
   };
-
-  function nvTry(diff) {
+  function nvAnalogyTry(diff) {
     var plan = NV_PLAN[diff], colCode = pick(plan.col), rowAttr = pick(plan.row), col;
     if (colCode === 'colorsize') col = ['color', 'size'];
     else if (colCode === 'shapefill') col = ['shape', 'fill'];
@@ -474,7 +535,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     var pool = turn ? SHAPES_TURN.slice() : SHAPES_PLAIN.slice();
     if (has('fill')) pool = without(pool, ['halfbox']);
 
-    var A = { shape: pick(pool), color: pick(COLOR_NAMES), size: 'big', fill: 'solid', count: 1, rot: turn ? pick([0, 90, 180, 270]) : 0 };
+    var A = { shape: pick(pool), color: pick(NV_COLORS), size: 'big', fill: 'solid', count: 1, rot: turn ? pick([0, 90, 180, 270]) : 0 };
     if (has('size')) A.size = pick(['big', 'small']);
     if (has('fill')) A.fill = Math.random() < 0.7 ? 'solid' : 'outline';
     if (has('count')) A.count = pick([1, 2]);
@@ -482,7 +543,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     var B = copyFig(A), i, a;
     for (i = 0; i < col.length; i++) {
       a = col[i];
-      if (a === 'color') B.color = pickOther(COLOR_NAMES, [A.color]);
+      if (a === 'color') B.color = pickOther(NV_COLORS, [A.color]);
       else if (a === 'shape') B.shape = pickOther(pool, [A.shape]);
       else if (a === 'size') B.size = A.size === 'big' ? 'small' : 'big';
       else if (a === 'fill') B.fill = A.fill === 'solid' ? 'outline' : 'solid';
@@ -490,7 +551,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
       else if (a === 'rot') B.rot = (A.rot + rotDelta) % 360;
     }
     var C = copyFig(A);
-    if (rowAttr === 'color') C.color = pickOther(COLOR_NAMES, [A.color, B.color]);
+    if (rowAttr === 'color') C.color = pickOther(NV_COLORS, [A.color, B.color]);
     else if (rowAttr === 'shape') C.shape = pickOther(pool, [A.shape, B.shape]);
     else if (rowAttr === 'size') C.size = A.size === 'big' ? 'small' : 'big';
     else if (rowAttr === 'fill') C.fill = A.fill === 'solid' ? 'outline' : 'solid';
@@ -503,11 +564,10 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     }
     if (figKey(A) === figKey(B) || figKey(A) === figKey(C) || figKey(C) === figKey(D) || figKey(B) === figKey(D)) return null;
 
-    // wrong answers that a child might choose
     var cands = [copyFig(C), copyFig(B)], x;
     for (i = 0; i < col.length; i++) {
       a = col[i]; x = copyFig(D);
-      if (a === 'color') { x.color = pickOther(COLOR_NAMES, [D.color, C.color]); cands.push(x); }
+      if (a === 'color') { x.color = pickOther(NV_COLORS, [D.color, C.color]); cands.push(x); }
       else if (a === 'shape') { x.shape = pickOther(pool, [D.shape, C.shape]); cands.push(x); }
       else if (a === 'count') { x.count = pickOther([1, 2, 3], [D.count, C.count]); cands.push(x); }
       else if (a === 'rot') {
@@ -519,7 +579,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
       for (i = 0; i < col.length; i++) { x = copyFig(C); x[col[i]] = B[col[i]]; cands.push(x); }
     }
     x = copyFig(D);
-    if (rowAttr === 'color') { x.color = pickOther(COLOR_NAMES, [D.color, A.color, C.color]); cands.push(x); }
+    if (rowAttr === 'color') { x.color = pickOther(NV_COLORS, [D.color, A.color, C.color]); cands.push(x); }
     else if (rowAttr === 'shape') { x.shape = pickOther(pool, [D.shape, A.shape, C.shape]); cands.push(x); }
     var guard = 0;
     while (cands.length < 14 && guard++ < 40) {
@@ -530,7 +590,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
       if (!has('count') && D.count === 1) opts.push('size');
       if (turn) opts.push('rot');
       a = pick(opts);
-      if (a === 'color') x.color = pickOther(COLOR_NAMES, [D.color]);
+      if (a === 'color') x.color = pickOther(NV_COLORS, [D.color]);
       else if (a === 'shape') x.shape = pickOther(pool, [D.shape]);
       else if (a === 'fill') x.fill = D.fill === 'solid' ? 'outline' : 'solid';
       else if (a === 'count') x.count = pickOther([1, 2, 3], [D.count]);
@@ -538,59 +598,299 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
       else if (a === 'rot') x.rot = (D.rot + pick([90, 180, 270])) % 360;
       cands.push(x);
     }
-    var seen = {}, wrong = [], k;
-    seen[figKey(D)] = 1;
-    for (i = 0; i < cands.length && wrong.length < 4; i++) {
-      k = figKey(cands[i]);
-      if (!seen[k]) { seen[k] = 1; wrong.push(cands[i]); }
-    }
+    var wrong = pickFive(D, cands, figKey);
     if (wrong.length < 4) return null;
-    var options = shuffle(wrong.concat([D])), answer = -1;
-    for (i = 0; i < 5; i++) if (figKey(options[i]) === figKey(D)) answer = i;
-    return { kind: 'nonverbal', diff: diff, grid: [A, B, C], options: options, answer: answer, col: col, rotDelta: rotDelta,
-      key: figKey(A) + figKey(B) + figKey(C) };
-  }
-  function nvGenerate(diff) {
-    var it = null, tries = 0;
-    while (!it && tries++ < 200) it = nvTry(diff);
-    while (!it) it = nvTry(1);
-    return it;
-  }
-  function nvExplain(it) {
-    var A = it.grid[0], B = it.grid[1], parts = [], i, a;
-    for (i = 0; i < it.col.length; i++) {
-      a = it.col[i];
+    var options = shuffle(wrong.concat([D])), answer = indexOf(options, D);
+    var parts = [];
+    for (i = 0; i < col.length; i++) {
+      a = col[i];
       if (a === 'color') parts.push('the color changes from ' + A.color + ' to ' + B.color);
       else if (a === 'shape') parts.push('the ' + SHAPE_WORD[A.shape] + ' turns into a ' + SHAPE_WORD[B.shape]);
       else if (a === 'size') parts.push(B.size === 'small' ? 'it gets smaller' : 'it gets bigger');
       else if (a === 'fill') parts.push(B.fill === 'outline' ? 'it becomes empty inside' : 'it gets colored in');
       else if (a === 'count') parts.push(NUM_WORD[A.count] + ' becomes ' + NUM_WORD[B.count]);
-      else if (a === 'rot') parts.push(it.rotDelta === 180 ? 'it turns all the way around' : 'it turns');
+      else if (a === 'rot') parts.push(rotDelta === 180 ? 'it turns all the way around' : 'it turns');
     }
-    return 'Look at the top row. ' + cap(parts.join(', and ')) + '. So the bottom picture changes the same way.';
+    return { kind: 'nonverbal', sub: 'analogy', diff: diff, grid: [A, B, C], options: options, answer: answer,
+      explain: 'Look at the top row. ' + cap(parts.join(', and ')) + '. So the bottom picture changes the same way.',
+      key: 'a' + figKey(A) + figKey(B) + figKey(C) };
   }
 
-  /* ---------------- Quantitative: number series / patterns ---------------- */
+  /* --- 3x3 matrix (e.g. each row has a small, medium and big circle) --- */
+  var SIZES3 = ['small', 'medium', 'big'];
+  var NM_TYPES = { 1: ['rowcol', 'latinSize', 'countRow'], 2: ['latinShape', 'latinColor', 'latinSize', 'countRow'], 3: ['rotRow', 'latinCount', 'latinShapeColor', 'latinShape'] };
+  var NM_EXPLAIN = {
+    rowcol: 'Each row has its own color, and each column has its own shape.',
+    latinSize: 'Each row and each column has a small one, a medium one, and a big one.',
+    latinShape: 'Each row and each column has one of each shape.',
+    latinColor: 'Each row and each column has one of each color.',
+    countRow: 'In each row there is one, then two, then three.',
+    rotRow: 'In each row, the shape turns a little more each time.',
+    latinCount: 'Each row and each column has one, two, and three.',
+    latinShapeColor: 'Each row has one of each shape and one of each color.'
+  };
+  function nvMatrixTry(diff) {
+    var type = pick(NM_TYPES[diff]), shapes = shuffle(SHAPES_PLAIN).slice(0, 3), cols = shuffle(NV_COLORS).slice(0, 3);
+    var tshape = pick(SHAPES_TURN), rot0 = pick([0, 90, 180, 270]), cells = [], r, c, f, i, x;
+    for (r = 0; r < 3; r++) {
+      for (c = 0; c < 3; c++) {
+        f = { shape: shapes[0], color: cols[0], size: 'big', fill: 'solid', count: 1, rot: 0 };
+        if (type === 'rowcol') { f.shape = shapes[c]; f.color = cols[r]; }
+        else if (type === 'latinSize') { f.size = SIZES3[(r + c) % 3]; }
+        else if (type === 'latinShape') { f.shape = shapes[(r + c) % 3]; }
+        else if (type === 'latinColor') { f.color = cols[(r + c) % 3]; }
+        else if (type === 'countRow') { f.count = c + 1; f.shape = shapes[r]; f.color = cols[r]; }
+        else if (type === 'rotRow') { f.shape = tshape; f.rot = (rot0 + 90 * c) % 360; f.color = cols[r]; }
+        else if (type === 'latinCount') { f.count = (r + c) % 3 + 1; }
+        else if (type === 'latinShapeColor') { f.shape = shapes[(r + c) % 3]; f.color = cols[(r + 2 * c) % 3]; }
+        cells.push(f);
+      }
+    }
+    var missing = diff === 3 ? rint(0, 8) : 8;
+    var ans = cells[missing];
+    cells[missing] = null;
+    var mr = Math.floor(missing / 3), mc = missing % 3, near = [], muts = [];
+    for (i = 0; i < 9; i++) if (cells[i] && (Math.floor(i / 3) === mr || i % 3 === mc)) near.push(copyFig(cells[i]));
+    var pool = type === 'rotRow' ? SHAPES_TURN : SHAPES_PLAIN;
+    x = copyFig(ans); x.color = pickOther(NV_COLORS, [ans.color]); muts.push(x);
+    x = copyFig(ans); x.shape = pickOther(pool, [ans.shape]); muts.push(x);
+    if (ans.count === 1) { x = copyFig(ans); x.size = pickOther(SIZES3, [ans.size]); muts.push(x); }
+    x = copyFig(ans); x.count = pickOther([1, 2, 3], [ans.count]); muts.push(x);
+    if (type === 'rotRow') {
+      for (i = 1; i < 4; i++) { x = copyFig(ans); x.rot = (ans.rot + 90 * i) % 360; muts.push(x); }
+    }
+    var cands = shuffle(near).slice(0, diff === 1 ? 1 : 2).concat(shuffle(muts)).concat(near);
+    var wrong = pickFive(ans, cands, figKey);
+    if (wrong.length < 4) return null;
+    var options = shuffle(wrong.concat([ans])), keys = [];
+    for (i = 0; i < 9; i++) keys.push(cells[i] ? figKey(cells[i]) : '-');
+    return { kind: 'nonverbal', sub: 'matrix', diff: diff, cells: cells, missing: missing, options: options,
+      answer: indexOf(options, ans), explain: NM_EXPLAIN[type], key: 'm' + type + keys.join(',') };
+  }
+
+  /* --- Pattern completion: a big design with a missing piece --- */
+  var PCOL = { blue: '#2f6fd6', yellow: '#f6c90e', green: '#2e9e5b', white: '#ffffff' };
+  var PAL = ['blue', 'yellow', 'green', 'white'];
+  var DW = 480, DH = 280, HS = 100;
+
+  function pcColorAt(p, x, y) {
+    var k, dx, dy, cx, cy, fg;
+    switch (p.fam) {
+      case 'stripes':
+        k = p.dir === 'v' ? Math.floor(x / p.w) : (p.dir === 'h' ? Math.floor(y / p.w) : Math.floor((x + y) / p.w));
+        return p.cols[mod(k, p.cols.length)];
+      case 'checker':
+        return p.cols[mod(Math.floor(x / p.s) + Math.floor(y / p.s), 2)];
+      case 'dots':
+        cx = (Math.floor(x / p.s) + 0.5) * p.s; cy = (Math.floor(y / p.s) + 0.5) * p.s; dx = x - cx; dy = y - cy;
+        fg = (p.fg2 && mod(Math.floor(y / p.s), 2)) ? p.fg2 : p.fg;
+        if (p.shape === 'circle') return dx * dx + dy * dy <= p.r * p.r ? fg : p.bg;
+        if (p.shape === 'square') return (Math.abs(dx) <= p.r * 0.85 && Math.abs(dy) <= p.r * 0.85) ? fg : p.bg;
+        return Math.abs(dx) + Math.abs(dy) <= p.r ? fg : p.bg;
+      case 'circle':
+        dx = x - p.cx; dy = y - p.cy;
+        return dx * dx + dy * dy <= p.r * p.r ? p.fg : p.bg;
+      case 'split':
+        return y > x * p.m + p.b ? p.fg : p.bg;
+    }
+    return 'white';
+  }
+  function pcRect(x, y, w, h, col) {
+    return '<rect x="' + f2(x) + '" y="' + f2(y) + '" width="' + f2(w) + '" height="' + f2(h) + '" fill="' + PCOL[col] + '" shape-rendering="crispEdges"/>';
+  }
+  function pcSVG(p, x0, y0, w, h) {
+    var s = '', i, j, k, x1 = x0 + w, y1 = y0 + h, cx, cy, fg, ya, yb, c1, c2, n, col, q;
+    switch (p.fam) {
+      case 'stripes':
+        n = p.cols.length;
+        if (p.dir === 'v') { for (k = Math.floor(x0 / p.w); k * p.w < x1; k++) s += pcRect(k * p.w, y0, p.w, h, p.cols[mod(k, n)]); }
+        else if (p.dir === 'h') { for (k = Math.floor(y0 / p.w); k * p.w < y1; k++) s += pcRect(x0, k * p.w, w, p.w, p.cols[mod(k, n)]); }
+        else {
+          ya = y0 - 2; yb = y1 + 2;
+          for (k = Math.floor((x0 + ya) / p.w) - 1; k * p.w <= x1 + yb + p.w; k++) {
+            c1 = k * p.w; c2 = c1 + p.w; col = PCOL[p.cols[mod(k, n)]];
+            s += '<polygon points="' + (c1 - ya) + ',' + ya + ' ' + (c2 - ya) + ',' + ya + ' ' + (c2 - yb) + ',' + yb + ' ' + (c1 - yb) + ',' + yb +
+              '" fill="' + col + '" stroke="' + col + '" stroke-width="0.6"/>';
+          }
+        }
+        break;
+      case 'checker':
+        for (i = Math.floor(x0 / p.s); i * p.s < x1; i++) {
+          for (j = Math.floor(y0 / p.s); j * p.s < y1; j++) s += pcRect(i * p.s, j * p.s, p.s, p.s, p.cols[mod(i + j, 2)]);
+        }
+        break;
+      case 'dots':
+        s += pcRect(x0, y0, w, h, p.bg);
+        for (i = Math.floor(x0 / p.s); i * p.s < x1; i++) {
+          for (j = Math.floor(y0 / p.s); j * p.s < y1; j++) {
+            cx = (i + 0.5) * p.s; cy = (j + 0.5) * p.s; fg = (p.fg2 && mod(j, 2)) ? p.fg2 : p.fg;
+            if (p.shape === 'circle') s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + p.r + '" fill="' + PCOL[fg] + '"/>';
+            else if (p.shape === 'square') { q = p.r * 0.85; s += pcRect(cx - q, cy - q, 2 * q, 2 * q, fg); }
+            else s += '<polygon points="' + cx + ',' + (cy - p.r) + ' ' + (cx + p.r) + ',' + cy + ' ' + cx + ',' + (cy + p.r) + ' ' + (cx - p.r) + ',' + cy + '" fill="' + PCOL[fg] + '"/>';
+          }
+        }
+        break;
+      case 'circle':
+        s += pcRect(x0, y0, w, h, p.bg) + '<circle cx="' + p.cx + '" cy="' + p.cy + '" r="' + p.r + '" fill="' + PCOL[p.fg] + '"/>';
+        break;
+      case 'split':
+        s += pcRect(x0, y0, w, h, p.bg);
+        ya = x0 - 600; yb = x1 + 600;
+        s += '<polygon points="' + ya + ',' + f2(p.m * ya + p.b) + ' ' + yb + ',' + f2(p.m * yb + p.b) + ' ' + yb + ',' + (y1 + 2000) + ' ' + ya + ',' + (y1 + 2000) + '" fill="' + PCOL[p.fg] + '"/>';
+        break;
+    }
+    return s;
+  }
+  function pcColorsUsed(p) {
+    var list = p.cols ? p.cols.slice() : [p.fg, p.bg];
+    if (p.fg2) list.push(p.fg2);
+    var out = [], i;
+    for (i = 0; i < list.length; i++) if (list[i] && indexOf(out, list[i]) < 0) out.push(list[i]);
+    return out;
+  }
+  function pcRecolor(p, map) {
+    var q = clone(p), i;
+    if (q.cols) for (i = 0; i < q.cols.length; i++) if (map[q.cols[i]]) q.cols[i] = map[q.cols[i]];
+    if (q.fg && map[q.fg]) q.fg = map[q.fg];
+    if (q.fg2 && map[q.fg2]) q.fg2 = map[q.fg2];
+    if (q.bg && map[q.bg]) q.bg = map[q.bg];
+    return q;
+  }
+  // a piece = what a 100x100 window at (hx, hy) shows, optionally flipped or turned
+  function pcSample(o) {
+    var sig = [], u, v, c = HS / 2, ang = o.tf && o.tf.indexOf('rot') === 0 ? parseInt(o.tf.slice(3), 10) : 0;
+    var cs = Math.cos(-ang * Math.PI / 180), sn = Math.sin(-ang * Math.PI / 180), dx, dy, sx, sy, col;
+    for (v = 0; v < 16; v++) {
+      for (u = 0; u < 16; u++) {
+        dx = (u + 0.5) * HS / 16 - c; dy = (v + 0.5) * HS / 16 - c;
+        if (o.tf === 'mirror') dx = -dx;
+        sx = dx * cs - dy * sn + c; sy = dx * sn + dy * cs + c;
+        col = pcColorAt(o.p, o.hx + sx, o.hy + sy);
+        sig.push(col);
+      }
+    }
+    return sig;
+  }
+  function sigDiff(a, b) { var n = 0, i; for (i = 0; i < a.length; i++) if (a[i] !== b[i]) n++; return n; }
+  function pcPieceSVG(o, px) {
+    var cx = o.hx + HS / 2, cy = o.hy + HS / 2, tr = '';
+    if (o.tf === 'mirror') tr = 'translate(' + (2 * cx) + ',0) scale(-1,1)';
+    else if (o.tf && o.tf.indexOf('rot') === 0) tr = 'rotate(' + parseInt(o.tf.slice(3), 10) + ' ' + cx + ' ' + cy + ')';
+    var inner = pcSVG(o.p, o.hx - 60, o.hy - 60, HS + 120, HS + 120);
+    if (tr) inner = '<g transform="' + tr + '">' + inner + '</g>';
+    return svgWrap(inner, px, false, o.hx + ' ' + o.hy + ' ' + HS + ' ' + HS);
+  }
+  function pcDesignSVG(it) {
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + DW + '" height="' + DH + '" viewBox="0 0 ' + DW + ' ' + DH + '" style="position:absolute;left:0;top:0">' +
+      pcSVG(it.p, 0, 0, DW, DH) +
+      '<rect x="' + it.hx + '" y="' + it.hy + '" width="' + HS + '" height="' + HS + '" fill="#ffffff" stroke="#8a8a8a" stroke-width="2"/>' +
+      '<text x="' + (it.hx + HS / 2) + '" y="' + (it.hy + HS / 2 + 18) + '" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="bold" font-size="52" fill="#b5b5b5">?</text></svg>';
+  }
+  function pcParams(diff) {
+    var fams = diff === 1 ? ['stripes2', 'checker', 'dots', 'stripes2', 'circle'] :
+      (diff === 2 ? ['stripes3', 'checkerSmall', 'dotsAlt', 'circle', 'split'] : ['diag', 'split', 'circle', 'dotsAlt', 'stripes3', 'checkerSmall']);
+    var f = pick(fams), c = shuffle(['blue', 'yellow', 'green']);
+    switch (f) {
+      case 'stripes2': return { fam: 'stripes', dir: pick(['v', 'h']), cols: [c[0], pick([c[1], 'white'])], w: 40, per: 80 };
+      case 'stripes3': return { fam: 'stripes', dir: pick(['v', 'h']), cols: [c[0], c[1], c[2]], w: 40, per: 120 };
+      case 'diag': return { fam: 'stripes', dir: 'd', cols: [c[0], pick([c[1], 'white'])], w: 40, per: 80 };
+      case 'checker': return { fam: 'checker', cols: [c[0], pick([c[1], 'white'])], s: 40, per: 80 };
+      case 'checkerSmall': return { fam: 'checker', cols: [c[0], c[1]], s: 20, per: 40 };
+      case 'dots': return { fam: 'dots', shape: pick(['circle', 'square', 'diamond']), fg: c[0], bg: 'white', s: 40, r: 13, per: 40 };
+      case 'dotsAlt': return { fam: 'dots', shape: pick(['circle', 'square', 'diamond']), fg: c[0], fg2: c[1], bg: 'white', s: 40, r: 13, per: 80 };
+      case 'circle': return { fam: 'circle', cx: rint(190, 290), cy: 140, r: rint(95, 115), fg: c[0], bg: pick([c[1], 'white']), per: 0 };
+      default: var m = pick([0.5, -0.5, 1, -1]); return { fam: 'split', m: m, b: 140 - m * 240, fg: c[0], bg: pick([c[1], 'white']), per: 0 };
+    }
+  }
+  function pcTry(diff) {
+    var p = pcParams(diff), hx, hy, tries = 0, sig, counts, i, step = diff === 1 ? 40 : 20, piece;
+    do {
+      hx = step * rint(Math.ceil(40 / step), Math.floor((DW - HS - 40) / step));
+      hy = step * rint(Math.ceil(40 / step), Math.floor((DH - HS - 40) / step));
+      piece = { p: p, hx: hx, hy: hy, tf: 'none' };
+      sig = pcSample(piece);
+      counts = {};
+      for (i = 0; i < sig.length; i++) counts[sig[i]] = (counts[sig[i]] || 0) + 1;
+      var most = 0, k;
+      for (k in counts) if (counts.hasOwnProperty(k) && counts[k] > most) most = counts[k];
+    } while (most > sig.length * 0.78 && ++tries < 200);
+    if (most > sig.length * 0.78) return null;
+
+    // wrong pieces: shifted, flipped, turned, recolored, or from a slightly different pattern
+    var per = p.per || 40, shifts = [[per / 2, 0], [0, per / 2], [per / 2, per / 2], [-per / 2, 0], [20, 0], [0, 20], [40, 0], [0, 40], [-40, 0], [0, -40], [60, 20]];
+    var shiftC = [], tfC = [], colC = [], parC = [], q, used = pcColorsUsed(p), spare = without(PAL, used);
+    for (i = 0; i < shifts.length; i++) shiftC.push({ p: p, hx: hx + shifts[i][0], hy: hy + shifts[i][1], tf: 'none' });
+    var tfs = ['mirror', 'rot90', 'rot180', 'rot270'];
+    for (i = 0; i < tfs.length; i++) tfC.push({ p: p, hx: hx, hy: hy, tf: tfs[i] });
+    if (used.length >= 2) { var sw = {}; sw[used[0]] = used[1]; sw[used[1]] = used[0]; colC.push({ p: pcRecolor(p, sw), hx: hx, hy: hy, tf: 'none' }); }
+    for (i = 0; i < used.length && spare.length; i++) { var mp = {}; mp[used[i]] = pick(spare); colC.push({ p: pcRecolor(p, mp), hx: hx, hy: hy, tf: 'none' }); }
+    if (p.fam === 'stripes') {
+      q = clone(p); q.w = p.w === 40 ? 20 : 40; parC.push(q);
+      q = clone(p); q.dir = p.dir === 'v' ? 'h' : 'v'; parC.push(q);
+      if (p.cols.length > 2) { q = clone(p); q.cols = p.cols.slice().reverse(); parC.push(q); }
+    } else if (p.fam === 'checker') {
+      q = clone(p); q.s = p.s === 40 ? 20 : 40; parC.push(q);
+      q = { fam: 'stripes', dir: pick(['v', 'h']), cols: p.cols.slice(), w: p.s, per: p.s * 2 }; parC.push(q);
+    } else if (p.fam === 'dots') {
+      q = clone(p); q.shape = pickOther(['circle', 'square', 'diamond'], [p.shape]); parC.push(q);
+      q = clone(p); q.r = p.r === 13 ? 7 : 13; parC.push(q);
+      q = clone(p); if (q.fg2) { delete q.fg2; } else { q.fg2 = pickOther(['blue', 'yellow', 'green'], [p.fg]); } parC.push(q);
+    } else if (p.fam === 'circle') {
+      q = clone(p); q.r = p.r + 35; parC.push(q);
+      q = clone(p); q.r = p.r - 35; parC.push(q);
+    } else if (p.fam === 'split') {
+      q = clone(p); q.m = -p.m; q.b = 140 - q.m * 240; parC.push(q);
+    }
+    for (i = 0; i < parC.length; i++) parC[i] = { p: parC[i], hx: hx, hy: hy, tf: 'none' };
+    var order = diff === 1 ? shuffle(colC).concat(shuffle(parC), shuffle(tfC), shuffle(shiftC)) :
+      (diff === 2 ? shuffle(shiftC).slice(0, 2).concat(shuffle(colC).slice(0, 1), shuffle(tfC), shuffle(parC), shuffle(colC), shuffle(shiftC)) :
+        shuffle(shiftC).slice(0, 2).concat(shuffle(tfC), shuffle(shiftC), shuffle(colC), shuffle(parC)));
+    var chosen = [], sigs = [], s2, ok, j;
+    for (i = 0; i < order.length && chosen.length < 4; i++) {
+      s2 = pcSample(order[i]);
+      if (sigDiff(s2, sig) < 20) continue;
+      ok = true;
+      for (j = 0; j < sigs.length; j++) if (sigDiff(s2, sigs[j]) < 14) { ok = false; break; }
+      if (ok) { chosen.push(order[i]); sigs.push(s2); }
+    }
+    if (chosen.length < 4) return null;
+    var options = shuffle(chosen.concat([piece]));
+    return { kind: 'nonverbal', sub: 'pattern', diff: diff, p: p, hx: hx, hy: hy, options: options, answer: indexOf(options, piece),
+      explain: 'The missing piece has to match the pattern all around it.', key: 'p' + JSON.stringify(p) + hx + ',' + hy };
+  }
+
+  var NV_SUBS = ['pattern', 'analogy', 'matrix'];
+  function nvGenerate(diff, sub) {
+    sub = sub || pick(NV_SUBS);
+    var fn = sub === 'pattern' ? pcTry : (sub === 'matrix' ? nvMatrixTry : nvAnalogyTry), it = null, tries = 0;
+    while (!it && tries++ < 300) it = fn(diff);
+    while (!it) it = nvAnalogyTry(1);
+    return it;
+  }
+
+  /* ================= QUANTITATIVE ================= */
+  var OBJ = [['🎁', 'gift'], ['🍎', 'apple'], ['⭐', 'star'], ['🐟', 'fish'], ['🌸', 'flower'],
+    ['⚽', 'ball'], ['🍪', 'cookie'], ['🎈', 'balloon'], ['🐞', 'ladybug'], ['🍌', 'banana']];
   var Q_TYPES = {
-    1: ['up1', 'up1', 'dotsUp', 'abShapes'],
-    2: ['down1', 'abNum', 'abcShapes', 'dotsDown', 'up1big'],
-    3: ['up2', 'aabb', 'down2', 'abcNum', 'abcShapes']
+    1: ['up1', 'dotsUp', 'abShapes', 'obj', 'obj', 'analog'],
+    2: ['down1', 'abNum', 'abcShapes', 'dotsDown', 'up1big', 'obj', 'analog'],
+    3: ['up2', 'aabb', 'down2', 'abcNum', 'obj', 'analog', 'matrix', 'matrix']
   };
   function plainFig(shape, color) { return { shape: shape, color: color, size: 'big', fill: 'solid', count: 1, rot: 0 }; }
   function figWord(f) { return f.color + ' ' + SHAPE_WORD[f.shape]; }
-  function numDistractors(ans, seq, lo, hi) {
-    var c = shuffle([ans + 1, ans - 1, ans + 2, ans - 2]).concat([seq[seq.length - 1], seq[0], ans + 3, ans - 3, ans + 4, ans + 5, ans + 6]);
+  function numDistractors(ans, near, lo, hi) {
+    var c = shuffle([ans + 1, ans - 1, ans + 2, ans - 2]).concat(near, [ans + 3, ans - 3, ans + 4, ans + 5, ans + 6]);
     var out = [], seen = {}, i, v;
     seen[ans] = 1;
     for (i = 0; i < c.length && out.length < 4; i++) {
       v = c[i];
-      if (v >= lo && v <= hi && !seen[v]) { seen[v] = 1; out.push(v); }
+      if (typeof v === 'number' && v >= lo && v <= hi && !seen[v]) { seen[v] = 1; out.push(v); }
     }
     for (v = lo; out.length < 4 && v <= hi + 10; v++) { if (!seen[v]) { seen[v] = 1; out.push(v); } }
     return out;
   }
-  function qGenerate(diff) {
-    var type = pick(Q_TYPES[diff]), seq, ans, mode = 'num', ex, a, b, c, s, wrong, X, Y, Z, sh, co;
+  function qSeries(diff, type) {
+    var seq, ans, mode = 'num', ex, a, b, c, s, wrong, X, Y, Z, sh, co, i;
     switch (type) {
       case 'up1': s = rint(1, 6); seq = [s, s + 1, s + 2, s + 3]; ans = s + 4; ex = 'The numbers go up by one'; break;
       case 'up1big': s = rint(7, 14); seq = [s, s + 1, s + 2, s + 3]; ans = s + 4; ex = 'The numbers go up by one'; break;
@@ -604,8 +904,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
         seq = [a, b, c, a]; ans = b; ex = 'The pattern is ' + a + ', ' + b + ', ' + c + ', and then it starts again'; break;
       case 'dotsUp': mode = 'dots'; s = rint(1, 3); seq = [s, s + 1, s + 2, s + 3]; ans = s + 4; ex = 'Each box has one more dot'; break;
       case 'dotsDown': mode = 'dots'; s = rint(5, 7); seq = [s, s - 1, s - 2, s - 3]; ans = s - 4; ex = 'Each box has one less dot'; break;
-      case 'abShapes':
-      case 'abcShapes':
+      default:
         mode = 'shapes';
         sh = shuffle(SHAPES_PLAIN); co = shuffle(COLOR_NAMES);
         X = plainFig(sh[0], co[0]); Y = plainFig(sh[1], co[1]); Z = plainFig(sh[2], co[2]);
@@ -618,24 +917,92 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
         }
         break;
     }
-    if (mode === 'num') wrong = numDistractors(ans, seq, 0, 20);
-    if (mode === 'dots') wrong = numDistractors(ans, seq, 1, 8);
-    var options = shuffle(wrong.concat([ans])), answer = indexOf(options, ans);
-    var words = [], all = seq.concat([ans]), i;
+    if (mode === 'num') wrong = numDistractors(ans, [seq[3], seq[0]], 0, 20);
+    if (mode === 'dots') wrong = numDistractors(ans, [seq[3], seq[0]], 1, 8);
+    var options = shuffle(wrong.concat([ans])), words = [], all = seq.concat([ans]);
     for (i = 0; i < all.length; i++) words.push(mode === 'shapes' ? figWord(all[i]) : String(all[i]));
     var tail = mode === 'shapes' ? 'the ' + figWord(ans) : (mode === 'dots' ? ans + (ans === 1 ? ' dot' : ' dots') : String(ans));
     var keyParts = [];
     for (i = 0; i < seq.length; i++) keyParts.push(mode === 'shapes' ? figKey(seq[i]) : seq[i]);
-    return { kind: 'quant', diff: diff, mode: mode, seq: seq, options: options, answer: answer,
+    return { kind: 'quant', layout: 'series', diff: diff, mode: mode, seq: seq, options: options, answer: indexOf(options, ans),
       explain: ex + ': ' + words.join(', ') + '. So ' + tail + ' comes next.', key: type + keyParts.join(',') };
   }
 
-  /* ---------------- items ---------------- */
+  // boxes of objects, e.g. 1 gift, 2 gifts, 3 gifts, 4 gifts, ?
+  function objKey(v) { return v.a + ',' + v.b; }
+  function qObjects(diff) {
+    var idx = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]), ea = OBJ[idx[0]][0], eb = OBJ[idx[1]][0], na = OBJ[idx[0]][1], nb = OBJ[idx[1]][1];
+    var sub = diff === 1 ? 'up' : (diff === 2 ? pick(['down', 'upConst']) : pick(['upDown', 'alt', 'upConst']));
+    var seq = [], ans, s, b, i, ex;
+    if (sub === 'up') { s = rint(1, 2); for (i = 0; i < 4; i++) seq.push({ a: s + i, b: 0 }); ans = { a: s + 4, b: 0 }; ex = 'Each box has one more ' + na; }
+    else if (sub === 'down') { s = rint(5, 6); for (i = 0; i < 4; i++) seq.push({ a: s - i, b: 0 }); ans = { a: s - 4, b: 0 }; ex = 'Each box has one less ' + na; }
+    else if (sub === 'upConst') {
+      b = rint(1, 2); for (i = 0; i < 4; i++) seq.push({ a: 1 + i, b: b }); ans = { a: 5, b: b };
+      ex = 'Each box has one more ' + na + ', and the ' + nb + (b > 1 ? 's stay' : ' stays') + ' the same';
+    } else if (sub === 'upDown') {
+      for (i = 0; i < 4; i++) seq.push({ a: 1 + i, b: 5 - i }); ans = { a: 5, b: 1 };
+      ex = 'Each box has one more ' + na + ' and one less ' + nb;
+    } else {
+      s = rint(1, 3); b = rint(1, 3); seq = [{ a: s, b: 0 }, { a: 0, b: b }, { a: s, b: 0 }, { a: 0, b: b }]; ans = { a: s, b: 0 };
+      ex = 'The boxes take turns';
+    }
+    var c = shuffle([{ a: ans.a + 1, b: ans.b }, { a: ans.a - 1, b: ans.b }, { a: ans.a, b: ans.b + 1 }, { a: ans.a, b: ans.b - 1 }])
+      .concat([seq[3], { a: ans.b, b: ans.a }, { a: ans.a + 2, b: ans.b }, { a: ans.a - 2, b: ans.b }, { a: ans.a + 1, b: ans.b + 1 }, { a: ans.a, b: ans.b + 2 }]);
+    var valid = [];
+    for (i = 0; i < c.length; i++) {
+      if (c[i].a >= 0 && c[i].b >= 0 && c[i].a + c[i].b >= 1 && c[i].a <= 7 && c[i].b <= 7 && c[i].a + c[i].b <= 9) valid.push(c[i]);
+    }
+    var wrong = pickFive(ans, valid, objKey);
+    for (i = 1; wrong.length < 4 && i < 9; i++) { var extra = { a: i, b: ans.b }; if (objKey(extra) !== objKey(ans)) wrong = pickFive(ans, wrong.concat([extra]), objKey); }
+    var options = shuffle(wrong.concat([ans])), keys = [];
+    for (i = 0; i < 4; i++) keys.push(objKey(seq[i]));
+    return { kind: 'quant', layout: 'series', diff: diff, mode: 'objs', ea: ea, eb: eb, seq: seq, options: options,
+      answer: indexOf(options, ans), explain: ex + '.', key: 'o' + ea + keys.join(';') };
+  }
+  // 2x2 number pairs: 3 goes to 4, so 6 goes to ?
+  function qAnalogy(diff) {
+    var d = diff === 1 ? 1 : (diff === 2 ? pick([-1, 2]) : pick([2, -2, 3])), a, b, c, ans;
+    a = rint(d < 0 ? 3 : 1, 7); b = a + d;
+    do { c = rint(d < 0 ? 3 : 1, 9); } while (c === a);
+    ans = c + d;
+    var wrong = numDistractors(ans, [c, b, a], 0, 20), options = shuffle(wrong.concat([ans]));
+    var word = Math.abs(d) === 1 ? 'one' : (Math.abs(d) === 2 ? 'two' : 'three');
+    return { kind: 'quant', layout: 'analogy', diff: diff, mode: 'num', seq: [a, b, c], options: options, answer: indexOf(options, ans),
+      explain: 'The top number goes ' + (d > 0 ? 'up' : 'down') + ' by ' + word + ': ' + a + ' to ' + b + '. So ' + c + ' goes to ' + ans + '.',
+      key: 'n' + a + ',' + b + ',' + c };
+  }
+  // 3x3 number grid
+  function qMatrix() {
+    var seq = [], r, c, s, vals, ex;
+    if (Math.random() < 0.5) {
+      s = rint(1, 4);
+      for (r = 0; r < 3; r++) for (c = 0; c < 3; c++) seq.push(s + r + c);
+      ex = 'Each row counts up by one, and each row starts one higher.';
+    } else {
+      vals = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 3);
+      for (r = 0; r < 3; r++) for (c = 0; c < 3; c++) seq.push(vals[(r + c) % 3]);
+      ex = 'Each row and each column has a ' + vals[0] + ', a ' + vals[1] + ', and a ' + vals[2] + '.';
+    }
+    var ans = seq[8];
+    seq[8] = null;
+    var wrong = numDistractors(ans, [seq[7], seq[6], seq[5]], 0, 20), options = shuffle(wrong.concat([ans]));
+    return { kind: 'quant', layout: 'matrix', diff: 3, mode: 'num', seq: seq, options: options, answer: indexOf(options, ans),
+      explain: ex, key: 'x' + seq.join(',') };
+  }
+  function qGenerate(diff, type) {
+    type = type || pick(Q_TYPES[diff]);
+    if (type === 'obj') return qObjects(diff);
+    if (type === 'analog') return qAnalogy(diff);
+    if (type === 'matrix') return qMatrix();
+    return qSeries(diff, type);
+  }
+
+  /* ================= items ================= */
   function diffFor(i, n) { var f = i / n; return f < 0.34 ? 1 : (f < 0.67 ? 2 : 3); }
-  function genItem(kind, diff, ctx) {
+  function genItem(kind, diff, ctx, sub) {
     var it, tries = 0;
     do {
-      it = kind === 'verbal' ? vGenerate(diff, ctx) : (kind === 'nonverbal' ? nvGenerate(diff) : qGenerate(diff));
+      it = kind === 'verbal' ? vGenerate(diff, ctx) : (kind === 'nonverbal' ? nvGenerate(diff, sub) : qGenerate(diff, sub));
     } while (ctx.keys[it.key] && tries++ < 40);
     ctx.keys[it.key] = 1;
     return it;
@@ -645,10 +1012,16 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     for (i = 0; i < n; i++) out.push(genItem(kind, diffFor(i, n), ctx));
     return out;
   }
+  var PRACTICE_SUBS = { verbal: [null, null, null], nonverbal: ['pattern', 'analogy', 'matrix'], quant: ['up1', 'obj', 'analog'] };
+  var DEMO_SUB = { verbal: null, nonverbal: 'pattern', quant: 'up1' };
+  function genPractice(kind, ctx) {
+    var out = [], i, subs = PRACTICE_SUBS[kind];
+    for (i = 0; i < subs.length; i++) out.push(genItem(kind, 1, ctx, subs[i]));
+    return out;
+  }
   function explain(it) {
-    if (it.kind === 'verbal') return vExplain(it);
-    if (it.kind === 'nonverbal') return nvExplain(it);
-    return it.explain;
+    if (it.kind === 'verbal') return 'The ' + it.odd + ' does not belong. The others are all ' + it.label + '.';
+    return it.explain || '';
   }
   var KIND = {
     verbal: { name: 'Verbal', color: '#3157d5' },
@@ -657,16 +1030,15 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
   };
   var DIRECTIONS = {
     verbal: 'Look at the six pictures. Five of the pictures go together in some way. One picture does not belong. Touch the picture that does not belong. Then touch the arrow.',
-    nonverbal: 'Look at the top two pictures. They go together in a certain way. Now look at the picture on the bottom. Find the answer that goes with it in the same way, so it fits in the box with the question mark. Touch your answer. Then touch the arrow.',
-    quant: 'Look at the row at the top. The numbers or pictures make a pattern. Find the answer that comes next in the pattern. Touch your answer. Then touch the arrow.'
+    nonverbal: 'Look at the picture at the top. Something is missing where the question mark is. Find the answer that fits there. Touch it. Then touch the arrow.',
+    quant: 'Look at the top. The numbers or pictures make a pattern. Find the answer that goes where the question mark is. Touch it. Then touch the arrow.'
   };
   function shortPrompt(it) {
     if (it.kind === 'verbal') return 'Which picture does not belong?';
-    if (it.kind === 'nonverbal') return 'Which picture goes in the box with the question mark?';
-    return it.mode === 'num' ? 'Which number comes next?' : 'Which picture comes next?';
+    return 'Which one goes where the question mark is?';
   }
 
-  /* ---------------- shared screen parts ---------------- */
+  /* ================= drawing a question ================= */
   function topBar(o) {
     var bar = el('div', 'topbar', box(0, 0, W, 60));
     if (o.onExit) {
@@ -681,7 +1053,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     }
     if (o.title) bar.appendChild(el('div', 'bartitle', box(200, 0, 600, 60), o.title));
     if (o.right) bar.appendChild(el('div', 'bartitle', box(560, 0, 425, 60) + 'text-align:right;font-size:17px', o.right));
-    if (o.onSpeak && settings.speak) {
+    if (o.onSpeak) {
       var sp = el('div', 'btn light', box(W - 88, 8, 74, 44) + 'border-radius:12px', speakerSVG());
       onTap(sp, o.onSpeak);
       bar.appendChild(sp);
@@ -705,6 +1077,21 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     p.appendChild(t);
     return t;
   }
+  function gridCells(p, n, cs, g, y, content) {
+    var total = n * cs + (n - 1) * g, x0 = Math.round((928 - total) / 2), i;
+    for (i = 0; i < n * n; i++) {
+      p.appendChild(el('div', 'cell', box(x0 + (i % n) * (cs + g), y + Math.floor(i / n) * (cs + g), cs, cs), content(i, cs - 4)));
+    }
+  }
+  function optionRow(p, content, letters, y0, tw, th) {
+    var gx = 38, x0 = Math.round((928 - (5 * tw + 4 * gx)) / 2), tiles = [], i, x;
+    for (i = 0; i < 5; i++) {
+      x = x0 + i * (tw + gx);
+      tiles.push(tile(p, x, y0, tw, th, content(i, th - 4)));
+      p.appendChild(el('div', 'lbl c', box(x, y0 + th + 4, tw, 28), letters ? 'ABCDE'.charAt(i) : String(i + 1)));
+    }
+    return tiles;
+  }
 
   function renderVerbal(it, p) {
     var tiles = [], tw = 230, th = 172, gx = 40, gy = 62, x0 = Math.round((928 - (3 * tw + 2 * gx)) / 2), y0 = 34, i, x, y;
@@ -718,40 +1105,72 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     return tiles;
   }
   function renderNonverbal(it, p) {
-    var tiles = [], cs = 132, g = 14, mx = Math.round((928 - (2 * cs + g)) / 2), my = 24, i, x, y;
-    for (i = 0; i < 4; i++) {
-      x = mx + (i % 2) * (cs + g); y = my + Math.floor(i / 2) * (cs + g);
-      p.appendChild(el('div', 'cell', box(x, y, cs, cs),
-        i < 3 ? figureSVG(it.grid[i], 116) : '<span class="qq" style="line-height:' + (cs - 4) + 'px">?</span>'));
+    var sub = it.sub || 'analogy';
+    if (sub === 'pattern') {
+      p.appendChild(el('div', 'cell', box(Math.round((928 - DW - 4) / 2), 24, DW + 4, DH + 4), pcDesignSVG(it)));
+      return optionRow(p, function (i) { return pcPieceSVG(it.options[i], 116); }, false, 360, 132, 132);
     }
-    var tw = 132, gx = 38, x0 = Math.round((928 - (5 * tw + 4 * gx)) / 2), y0 = 360;
-    for (i = 0; i < 5; i++) {
-      x = x0 + i * (tw + gx);
-      tiles.push(tile(p, x, y0, tw, tw, figureSVG(it.options[i], 116)));
-      p.appendChild(el('div', 'lbl c', box(x, y0 + tw + 4, tw, 28), String(i + 1)));
+    if (sub === 'matrix') {
+      gridCells(p, 3, 94, 8, 18, function (i, h) { return it.cells[i] ? figureSVG(it.cells[i], 82) : qmark(h); });
+    } else {
+      gridCells(p, 2, 132, 14, 24, function (i, h) { return i < 3 ? figureSVG(it.grid[i], 116) : qmark(h); });
     }
-    return tiles;
+    return optionRow(p, function (i) { return figureSVG(it.options[i], 116); }, false, 360, 132, 132);
+  }
+  // Each kind of object gets its own row(s) so it is easy to count.
+  function objRows(it, v) {
+    var rows = [], widest = 1;
+    function addGroup(e, n) {
+      var per = n === 4 ? 2 : 3, k, i, row;
+      for (k = 0; k < n; k += per) {
+        row = '';
+        for (i = k; i < Math.min(n, k + per); i++) row += e;
+        rows.push(row);
+        widest = Math.max(widest, Math.min(per, n - k));
+      }
+    }
+    addGroup(it.ea, v.a);
+    addGroup(it.eb, v.b);
+    return { rows: rows, widest: widest };
+  }
+  function objsHTML(it, v, h) {
+    // one emoji size for every box in the question, sized to fit the fullest box
+    var all = it.seq.concat(it.options), fs = 40, i, L;
+    for (i = 0; i < all.length; i++) {
+      L = objRows(it, all[i]);
+      fs = Math.min(fs, 100 / (L.widest * 1.25), (h - 8) / (L.rows.length * 1.18));
+    }
+    fs = Math.floor(fs);
+    L = objRows(it, v);
+    var lh = Math.round(fs * 1.18), top = Math.round((h - L.rows.length * lh) / 2);
+    return '<div class="emoji" style="position:absolute;left:0;right:0;top:' + top + 'px;font-size:' + fs + 'px;line-height:' + lh + 'px;white-space:nowrap">' + L.rows.join('<br>') + '</div>';
   }
   function quantContent(it, v, px, h) {
     if (it.mode === 'num') return '<span class="qn" style="line-height:' + h + 'px">' + v + '</span>';
     if (it.mode === 'dots') return dotsSVG(v, px);
+    if (it.mode === 'objs') return objsHTML(it, v, h);
     return figureSVG(v, px);
   }
   function renderQuant(it, p) {
-    var tiles = [], cw = 118, ch = 108, bw = cw * 5, bx = Math.round((928 - bw - 4) / 2), by = 40, i, x;
+    var layout = it.layout || 'series';
+    if (layout === 'analogy') {
+      gridCells(p, 2, 132, 14, 24, function (i, h) { return i < 3 ? quantContent(it, it.seq[i], 100, h) : qmark(h); });
+      return optionRow(p, function (i, h) { return quantContent(it, it.options[i], 100, h); }, true, 360, 132, 132);
+    }
+    if (layout === 'matrix') {
+      gridCells(p, 3, 94, 8, 18, function (i, h) {
+        return it.seq[i] === null ? qmark(h) : '<span class="qn" style="line-height:' + h + 'px;font-size:46px">' + it.seq[i] + '</span>';
+      });
+      return optionRow(p, function (i, h) { return quantContent(it, it.options[i], 100, h); }, true, 360, 132, 132);
+    }
+    var cw = 118, ch = 108, bw = cw * 5, bx = Math.round((928 - bw - 4) / 2), by = 40, i;
     var bar = el('div', 'qbar', box(bx, by, bw + 4, ch + 4));
     for (i = 0; i < 5; i++) {
       bar.appendChild(el('div', '', box(i * cw, 0, cw, ch) + (i ? 'border-left:2px solid #c8c8c8;' : ''),
-        i < 4 ? quantContent(it, it.seq[i], 84, ch) : '<span class="qq" style="line-height:' + ch + 'px">?</span>'));
+        i < 4 ? quantContent(it, it.seq[i], 84, ch) : qmark(ch)));
     }
     p.appendChild(bar);
-    var tw = 128, th = 118, gx = 40, x0 = Math.round((928 - (5 * tw + 4 * gx)) / 2), y0 = 250;
-    for (i = 0; i < 5; i++) {
-      x = x0 + i * (tw + gx);
-      tiles.push(tile(p, x, y0, tw, th, quantContent(it, it.options[i], 92, th - 4)));
-      p.appendChild(el('div', 'lbl c', box(x, y0 + th + 4, tw, 28), 'ABCDE'.charAt(i)));
-    }
-    return tiles;
+    return optionRow(p, function (k, h) { return quantContent(it, it.options[k], 92, h); }, true, 250, 128, 118);
   }
   function renderItem(it, p) {
     if (it.kind === 'verbal') return renderVerbal(it, p);
@@ -766,7 +1185,31 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     }
   }
 
-  /* ---------------- home ---------------- */
+  /* ---------------- the pointing hand used in the wordless instructions ---------------- */
+  function stagePos(node) {
+    var x = node.offsetLeft + node.offsetWidth / 2, y = node.offsetTop + node.offsetHeight / 2, q = node.offsetParent;
+    while (q && q !== stage) { x += q.offsetLeft + (q.clientLeft || 0); y += q.offsetTop + (q.clientTop || 0); q = q.offsetParent; }
+    return { x: x, y: y };
+  }
+  function makeHand() {
+    var h = el('div', 'hand emoji', box(460, 790, 80, 90), '👆');
+    stage.appendChild(h);
+    return h;
+  }
+  function handTo(h, pos) { h.style.left = Math.round(pos.x - 40) + 'px'; h.style.top = Math.round(pos.y - 14) + 'px'; }
+  function ripple(pos) {
+    var r = el('div', 'ripple', box(pos.x - 36, pos.y - 36, 72, 72));
+    stage.appendChild(r);
+    later(function () { if (r.parentNode) r.parentNode.removeChild(r); }, 700);
+  }
+  function nudge(tiles) {
+    var i;
+    for (i = 0; i < tiles.length; i++) removeClass(tiles[i], 'nudge');
+    later(function () { for (var j = 0; j < tiles.length; j++) addClass(tiles[j], 'nudge'); }, 20);
+    later(function () { for (var j = 0; j < tiles.length; j++) removeClass(tiles[j], 'nudge'); }, 520);
+  }
+
+  /* ================= home ================= */
   function showHome() {
     hush(); clear();
     stage.appendChild(el('div', 'title', box(0, 26, W, 66), 'Puzzle Practice'));
@@ -803,23 +1246,23 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     var g = el('div', 'hold', box(W - 262, 670, 240, 56), '<div class="fill"></div><span style="line-height:56px;font-size:19px">Grown-ups (hold)</span>');
     onHold(g, 1000, showGrownups);
     stage.appendChild(g);
-    if (window.navigator.standalone === false) {
-      stage.appendChild(el('div', 'tip', box(24, 668, 680, 60), 'Tip: tap the Share button, then “Add to Home Screen” to open this full screen like an app.'));
-    }
+    var info = settings.count + ' questions per part' + (settings.timer ? ' · 30-minute limit' : '') + '. Change in Grown-ups.';
+    if (window.navigator.standalone === false) info = 'Tip: tap Share, then “Add to Home Screen” to open full screen. ' + info;
+    stage.appendChild(el('div', 'tip', box(24, 668, 680, 60), info));
   }
 
-  /* ---------------- touch practice (warm-up) ---------------- */
+  /* ================= Touch Practice (warm-up; always uses the voice) ================= */
   var STARS = [[500, 400, 240], [240, 260, 140], [770, 560, 140], [300, 600, 120], [740, 250, 120]];
   function startWarmup() { warmStep(0); }
   function warmStep(step) {
     clear();
     var instr = '', lastSay = 0, k, p, l, r, tiles;
-    function speak(s) { instr = s; lastSay = now(); say(s); }
-    function repeat() { var t = now(); if (t - lastSay > 2500) { lastSay = t; say(instr); } }
+    function speak(s) { instr = s; lastSay = now(); say(s, true); }
+    function repeat() { var t = now(); if (t - lastSay > 2500) { lastSay = t; say(instr, true); } }
     var bg = el('div', '', box(0, 0, W, H));
     onTap(bg, repeat);
     stage.appendChild(bg);
-    topBar({ title: 'Touch Practice', onBack: showHome, backLabel: '‹ Home', onSpeak: function () { say(instr); } });
+    topBar({ title: 'Touch Practice', onBack: showHome, backLabel: '‹ Home', onSpeak: function () { say(instr, true); } });
 
     if (step < STARS.length) {
       var s = STARS[step];
@@ -888,53 +1331,100 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     }
   }
 
-  /* ---------------- a practice test session ---------------- */
+  /* ================= a practice test session ================= */
   function startSession(kinds) {
     hush();
     var S = { id: now(), at: now(), parts: [], partIdx: 0 }, k, n = settings.count, P, i;
     for (k = 0; k < kinds.length; k++) {
       var ctx = { recent: [], keys: {} };
-      P = { kind: kinds[k], practice: settings.practice ? genItem(kinds[k], 1, ctx) : null,
-        items: genItems(kinds[k], n, ctx), picks: [], times: [], finished: false };
+      P = { kind: kinds[k], practice: settings.howto ? genPractice(kinds[k], ctx) : [],
+        items: genItems(kinds[k], n, ctx), picks: [], times: [], finished: false, timedOut: false, deadline: 0 };
       for (i = 0; i < n; i++) { P.picks.push(-1); P.times.push(0); }
       S.parts.push(P);
     }
     startPart(S);
   }
   function startPart(S) {
-    var P = S.parts[S.partIdx];
-    if (P.practice) showPractice(S); else showQuestion(S, 0, true);
+    if (S.parts[S.partIdx].practice.length) showHowTo(S, null); else showQuestion(S, 0, true);
   }
   function exitSession(S) { hush(); saveSession(S); showHome(); }
+  function speakBtn(fn) { return settings.speak ? fn : null; }
 
-  function showPractice(S) {
-    var P = S.parts[S.partIdx], it = P.practice, info = KIND[P.kind], revealed = false;
+  // Wordless animated instructions, like the real test: a hand picks the answer, then touches the arrow.
+  function showHowTo(S, demo) {
+    var P = S.parts[S.partIdx], info = KIND[P.kind], done = false;
+    demo = demo || genItem(P.kind, 1, { recent: [], keys: {} }, DEMO_SUB[P.kind]);
     clear();
-    topBar({ title: info.name + ' · Practice', onExit: function () { exitSession(S); },
-      onSpeak: function () { say(revealed ? explain(it) : DIRECTIONS[P.kind]); } });
-    var p = panel(info.color);
-    var tiles = renderItem(it, p);
-    var l = arrowBtn(p, 'left'), r = arrowBtn(p, 'right');
-    addClass(l, 'off');
-    wireTiles(tiles, function () {
-      if (revealed) return;
-      revealed = true;
-      // Like the real practice questions: the narrator explains the answer. It never says right or wrong.
-      say('Let’s look at this one together. ' + explain(it) + ' Now touch the arrow.');
-      setTimeout(function () { addClass(tiles[it.answer], 'hint'); addClass(r, 'pulse'); }, 600);
+    topBar({ title: info.name + ' · How to', onExit: function () { exitSession(S); },
+      onSpeak: speakBtn(function () { say(DIRECTIONS[P.kind]); }) });
+    var p = panel(info.color), tiles = renderItem(demo, p), l = arrowBtn(p, 'left'), r = arrowBtn(p, 'right');
+    addClass(l, 'off'); addClass(r, 'off');
+    window.__pp.current = demo;
+    var hand = makeHand(), t = stagePos(tiles[demo.answer]), a = stagePos(r);
+    later(function () { handTo(hand, t); }, 500);
+    later(function () { ripple(t); markSelected(tiles, demo.answer); }, 1500);
+    later(function () { handTo(hand, a); }, 2500);
+    later(function () { ripple(a); removeClass(r, 'off'); }, 3500);
+    later(function () {
+      handTo(hand, { x: 500, y: 820 });
+      done = true;
+      addClass(r, 'pulse');
+      var rp = el('div', 'btn light', box(Math.round(928 / 2 - 40), 650 - 14 - 76, 80, 68) + 'border-radius:16px', replaySVG());
+      onTap(rp, function () { showHowTo(S, demo); });
+      p.appendChild(rp);
+    }, 4300);
+    onTap(r, function () { if (done) showPractice(S, 0); });
+    say(DIRECTIONS[P.kind]);
+  }
+
+  // Three practice questions. She has to get each one right; if not, the hand shows the answer.
+  function showPractice(S, k) {
+    var P = S.parts[S.partIdx], it = P.practice[k], info = KIND[P.kind], cur = -1, hand = null, helpTimer = null;
+    clear();
+    topBar({ title: info.name + ' · Practice ' + (k + 1) + ' of ' + P.practice.length, onExit: function () { exitSession(S); },
+      onSpeak: speakBtn(function () { say(shortPrompt(it)); }) });
+    var p = panel(info.color), tiles = renderItem(it, p), l = arrowBtn(p, 'left'), r = arrowBtn(p, 'right');
+    addClass(l, 'off'); addClass(r, 'off');
+    window.__pp.current = it;
+    function ensureHand() { if (!hand) hand = makeHand(); removeClass(hand, 'bob'); }
+    function ready() {
+      removeClass(r, 'off'); addClass(r, 'pulse');
+      if (hand) {
+        removeClass(hand, 'bob');
+        handTo(hand, stagePos(r));
+        later(function () { addClass(hand, 'bob'); }, 850);
+      }
+    }
+    function help() {
+      var t = stagePos(tiles[it.answer]);
+      ensureHand();
+      later(function () { handTo(hand, t); }, 30);
+      later(function () { ripple(t); addClass(hand, 'bob'); }, 900);
+      say(explain(it));
+    }
+    wireTiles(tiles, function (j) {
+      cur = j;
+      if (helpTimer) { clearTimeout(helpTimer); helpTimer = null; }
+      if (j === it.answer) ready();
+      else { addClass(r, 'off'); removeClass(r, 'pulse'); helpTimer = later(help, 700); }
     });
-    onTap(r, function () { showQuestion(S, 0, true); });
-    say('Let’s practice. ' + DIRECTIONS[P.kind]);
+    onTap(r, function () {
+      if (cur !== it.answer) { nudge(tiles); return; }
+      if (k + 1 < P.practice.length) showPractice(S, k + 1); else showQuestion(S, 0, true);
+    });
+    say(k === 0 ? DIRECTIONS[P.kind] : shortPrompt(it));
   }
 
   function showQuestion(S, i, first) {
-    var P = S.parts[S.partIdx], it = P.items[i], info = KIND[P.kind], n = P.items.length, shown = now();
+    var P = S.parts[S.partIdx], it = P.items[i], info = KIND[P.kind], n = P.items.length, shown = now(), left = false;
     clear();
-    function leave() { P.times[i] += now() - shown; }
+    if (settings.timer && !P.deadline) P.deadline = now() + LIMIT_MS;
+    function leave() { if (!left) { left = true; P.times[i] += now() - shown; } }
     topBar({ title: info.name + ' · ' + (i + 1) + ' of ' + n, onExit: function () { leave(); exitSession(S); },
-      onSpeak: function () { say(first && !P.practice ? DIRECTIONS[P.kind] : shortPrompt(it)); } });
+      onSpeak: speakBtn(function () { say(shortPrompt(it)); }) });
     var p = panel(info.color);
     var tiles = renderItem(it, p);
+    window.__pp.current = it;
     markSelected(tiles, P.picks[i]);
     wireTiles(tiles, function (k) { P.picks[i] = k; });
     var l = arrowBtn(p, 'left'), r = arrowBtn(p, 'right');
@@ -943,26 +1433,53 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     onTap(r, function () {
       leave();
       if (i < n - 1) showQuestion(S, i + 1, false);
-      else { P.finished = true; showStop(S); }
+      else showPartReview(S, false);
     });
-    if (first) say(P.practice ? 'Now you will do some by yourself. ' + shortPrompt(it) : DIRECTIONS[P.kind]);
-    else say(shortPrompt(it));
+    if (P.deadline) {
+      ticker = setInterval(function () {
+        if (now() >= P.deadline) { leave(); P.timedOut = true; showPartReview(S, true); }
+      }, 1000);
+    }
+    say(first && !P.practice.length ? DIRECTIONS[P.kind] : shortPrompt(it));
   }
 
-  function showStop(S) {
+  // Review screen at the end of a part, like the real test: see what's answered, go back, or finish.
+  function showPartReview(S, timedOut) {
+    var P = S.parts[S.partIdx], info = KIND[P.kind], n = P.items.length, i;
+    if (P.deadline && now() >= P.deadline) { timedOut = true; P.timedOut = true; }
     clear(); hush();
+    topBar({ title: info.name + ' · Review', onExit: function () { exitSession(S); } });
+    var cols = n <= 10 ? 5 : 10, bw = 74, bh = 60, gx = 14, gy = 16, x0 = Math.round((W - (cols * bw + (cols - 1) * gx)) / 2), y0 = 140;
+    if (timedOut) stage.appendChild(el('div', 'mid', box(0, 76, W, 50) + 'line-height:50px', clockSVG(40) + ' Time is up'));
+    for (i = 0; i < n; i++) {
+      (function (k) {
+        var b = el('div', 'rbox ' + (P.picks[k] >= 0 ? 'ans' : 'blank'),
+          box(x0 + (k % cols) * (bw + gx), y0 + Math.floor(k / cols) * (bh + gy), bw, bh), String(k + 1));
+        if (!timedOut) onTap(b, function () { showQuestion(S, k, false); });
+        stage.appendChild(b);
+      })(i);
+    }
+    stage.appendChild(el('div', 'tip', box(0, 560, W, 30) + 'text-align:center',
+      timedOut ? 'Grown-ups: time ran out, so answers can’t be changed. Touch Done.' :
+        'Grown-ups: blue = answered, white = skipped. Touch a number to go back, or touch Done.'));
+    var done = el('div', 'btn', box(370, 610, 260, 90) + 'background:#2e9e44;font-size:32px;font-weight:bold;line-height:90px',
+      checkSVG(44, true) + ' Done');
+    onTap(done, function () { P.finished = true; finishPart(S); });
+    stage.appendChild(done);
+  }
+
+  function finishPart(S) {
     var more = S.partIdx < S.parts.length - 1;
-    stage.appendChild(el('div', '', box(380, 90, 240, 240), stopSVG(240)));
-    stage.appendChild(el('div', 'big', box(0, 360, W, 60), 'Stop'));
-    stage.appendChild(el('div', 'mid', box(0, 430, W, 40), 'You finished this part.'));
-    var go = el('div', 'btn', box(350, 540, 300, 90) + 'background:#1a6ee8;font-size:30px;font-weight:bold;line-height:90px', more ? 'Next part →' : 'Done');
-    onTap(go, function () {
-      if (more) { S.partIdx++; startPart(S); }
-      else { saveSession(S); showDone(); }
-    });
+    saveSession(S);
+    if (!more) { showDone(); return; }
+    clear(); hush();
+    stage.appendChild(el('div', '', box(410, 110, 180, 180), checkSVG(180)));
+    stage.appendChild(el('div', 'big', box(0, 330, W, 60), 'Finished!'));
+    stage.appendChild(el('div', 'mid', box(0, 400, W, 40), 'Next: ' + KIND[S.parts[S.partIdx + 1].kind].name));
+    var go = el('div', 'btn', box(350, 520, 300, 90) + 'background:#1a6ee8;font-size:30px;font-weight:bold;line-height:90px', 'Next part →');
+    onTap(go, function () { S.partIdx++; startPart(S); });
     stage.appendChild(go);
-    say('Stop. You finished this part.');
-    if (!more) saveSession(S);
+    say('You finished this part.');
   }
   function showDone() {
     clear();
@@ -976,19 +1493,19 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     say('All done! You worked hard.');
   }
 
-  /* ---------------- results ---------------- */
-  function loadSessions() { var l = load('pp.sessions', []); return (l && l.length !== undefined) ? l : []; }
+  /* ================= results (grown-ups only) ================= */
+  function loadSessions() { var l = load('pp.sessions2', []); return (l && l.length !== undefined) ? l : []; }
   function saveSession(S) {
     var rec = { id: S.id, at: S.at, parts: [] }, k, P, j, any;
     for (k = 0; k < S.parts.length; k++) {
       P = S.parts[k]; any = P.finished;
       for (j = 0; j < P.picks.length; j++) if (P.picks[j] >= 0) any = true;
-      if (any) rec.parts.push({ kind: P.kind, items: P.items, picks: P.picks, times: P.times, finished: P.finished });
+      if (any) rec.parts.push({ kind: P.kind, items: P.items, picks: P.picks, times: P.times, finished: P.finished, timedOut: P.timedOut });
     }
     if (!rec.parts.length) return;
     var list = loadSessions(), out = [rec];
-    for (k = 0; k < list.length && out.length < 25; k++) if (list[k].id !== rec.id) out.push(list[k]);
-    while (!save('pp.sessions', out) && out.length > 1) out.pop();
+    for (k = 0; k < list.length && out.length < 20; k++) if (list[k].id !== rec.id) out.push(list[k]);
+    while (!save('pp.sessions2', out) && out.length > 1) out.pop();
   }
   function score(part) {
     var c = 0, j;
@@ -1006,53 +1523,61 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     var d = new Date(t), h = d.getHours(), m = d.getMinutes();
     return MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + ((h % 12) || 12) + ':' + (m < 10 ? '0' : '') + m + (h < 12 ? ' AM' : ' PM');
   }
+  function partNote(P) { return P.timedOut ? ' (time ran out)' : (P.finished ? '' : ' (stopped early)'); }
 
   function segmented(x, y, options, current, onSel) {
     var i, w = 96;
     for (i = 0; i < options.length; i++) {
-      (function (opt) {
-        var b = el('div', 'btn light' + (opt[0] === current ? ' on' : ''), box(x + i * (w + 10), y, w, 50) + 'font-size:20px;line-height:46px;border-radius:12px', opt[1]);
+      (function (opt, k) {
+        var b = el('div', 'btn light' + (opt[0] === current ? ' on' : ''), box(x + k * (w + 10), y, w, 50) + 'font-size:20px;line-height:46px;border-radius:12px', opt[1]);
         onTap(b, function () { onSel(opt[0]); });
         stage.appendChild(b);
-      })(options[i]);
+      })(options[i], i);
     }
   }
 
   function showGrownups() {
     hush(); clear();
     topBar({ title: 'Grown-ups', onBack: showHome, backLabel: '‹ Home' });
-    stage.appendChild(el('div', 'setlbl', box(40, 88, 420, 50) + 'line-height:50px', 'Questions in each part'));
-    segmented(480, 88, [[6, '6'], [10, '10'], [14, '14'], [18, '18']], settings.count, function (v) { settings.count = v; saveSettings(); showGrownups(); });
-    stage.appendChild(el('div', 'setlbl', box(40, 152, 420, 50) + 'line-height:50px', 'Read directions out loud'));
-    segmented(480, 152, [[true, 'On'], [false, 'Off']], settings.speak, function (v) {
-      settings.speak = v; saveSettings(); showGrownups(); if (v) say('Directions will be read out loud.');
-    });
-    stage.appendChild(el('div', 'setlbl', box(40, 212, 430, 64), 'Practice question first<br><span style="font-size:16px;color:#7a8597">The voice explains the answer, like the real test.</span>'));
-    segmented(480, 216, [[true, 'On'], [false, 'Off']], settings.practice, function (v) { settings.practice = v; saveSettings(); showGrownups(); });
-
-    stage.appendChild(el('div', 'h2', box(40, 292, 400, 36), 'Results'));
-    stage.appendChild(el('div', 'tip', box(300, 298, 660, 30) + 'text-align:right', 'Your child never sees right or wrong. Only this screen shows it.'));
-    var list = el('div', 'scroll', box(40, 336, 920, 330));
+    var rows = [
+      ['Questions in each part<br><small>The real test has 40.</small>', [[10, '10'], [20, '20'], [40, '40']], 'count'],
+      ['30-minute time limit<br><small>Same limit as the real test.</small>', [[true, 'On'], [false, 'Off']], 'timer'],
+      ['How-to animation + 3 practice<br><small>The real test starts this way.</small>', [[true, 'On'], [false, 'Off']], 'howto'],
+      ['Read directions out loud<br><small>The real test has no voice.</small>', [[true, 'On'], [false, 'Off']], 'speak']
+    ], i;
+    for (i = 0; i < rows.length; i++) {
+      (function (row, k) {
+        var y = 76 + k * 62;
+        stage.appendChild(el('div', 'setlbl', box(40, y + 2, 440, 54), row[0]));
+        segmented(560, y + 4, row[1], settings[row[2]], function (v) {
+          settings[row[2]] = v; saveSettings(); showGrownups();
+          if (row[2] === 'speak' && v) say('Directions will be read out loud.');
+        });
+      })(rows[i], i);
+    }
+    stage.appendChild(el('div', 'h2', box(40, 330, 400, 36), 'Results'));
+    stage.appendChild(el('div', 'tip', box(300, 336, 660, 30) + 'text-align:right', 'Your child never sees right or wrong. Only this screen shows it.'));
+    var list = el('div', 'scroll', box(40, 372, 920, 296));
     list.setAttribute('data-scroll', '1');
     stage.appendChild(list);
-    var sessions = loadSessions(), i;
+    var sessions = loadSessions();
     if (!sessions.length) list.appendChild(el('div', 'empty', '', 'No results yet.'));
     for (i = 0; i < sessions.length; i++) {
       (function (idx) {
         var rec = sessions[idx], parts = [], k, P;
         for (k = 0; k < rec.parts.length; k++) {
           P = rec.parts[k];
-          parts.push(KIND[P.kind].name + ' ' + score(P) + '/' + P.items.length + (P.finished ? '' : ' (stopped early)'));
+          parts.push(KIND[P.kind].name + ' ' + score(P) + '/' + P.items.length + partNote(P));
         }
         var row = el('div', 'row', '', '<div class="d">' + fmtDate(rec.at) + '</div>' + parts.join(' · '));
         onTap(row, function () { showSession(idx); });
         list.appendChild(row);
       })(i);
     }
-    var clr = el('div', 'hold', box(40, 680, 300, 52), '<div class="fill"></div><span style="line-height:52px;font-size:18px">Clear results (hold)</span>');
-    onHold(clr, 1500, function () { save('pp.sessions', []); showGrownups(); });
+    var clr = el('div', 'hold', box(40, 682, 300, 52), '<div class="fill"></div><span style="line-height:52px;font-size:18px">Clear results (hold)</span>');
+    onHold(clr, 1500, function () { save('pp.sessions2', []); showGrownups(); });
     stage.appendChild(clr);
-    stage.appendChild(el('div', 'tip', box(360, 680, 600, 52) + 'text-align:right', 'Results are saved on this device only.'));
+    stage.appendChild(el('div', 'tip', box(360, 682, 600, 52) + 'text-align:right;line-height:52px', 'Results are saved on this device only.'));
   }
 
   function showSession(idx) {
@@ -1067,8 +1592,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     for (k = 0; k < rec.parts.length; k++) {
       var P = rec.parts[k];
       wrap.appendChild(el('div', 'ptitle', '', KIND[P.kind].name + ': ' + score(P) + ' of ' + P.items.length + ' correct'));
-      wrap.appendChild(el('div', 'pmeta', '', 'Time: ' + fmtTime(totalTime(P)) + (P.finished ? '' : ' · stopped early') +
-        ' · Tap a number to see the question.'));
+      wrap.appendChild(el('div', 'pmeta', '', 'Time: ' + fmtTime(totalTime(P)) + partNote(P) + ' · Tap a number to see the question.'));
       var chips = el('div', '', 'position:relative;margin-bottom:14px');
       for (j = 0; j < P.items.length; j++) {
         (function (pk, ij) {
@@ -1105,7 +1629,9 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
   }
 
   // test hooks for automated checks (harmless in normal use)
-  window.__pp = { genItems: genItems, explain: explain, figKey: figKey };
+  window.__pp = { genItems: genItems, genItem: genItem, explain: explain, figKey: figKey, pcSample: pcSample, sigDiff: sigDiff,
+    setLimit: function (ms) { LIMIT_MS = ms; }, settings: settings,
+    preview: function (it) { clear(); var p = panel(KIND[it.kind].color); renderItem(it, p); arrowBtn(p, 'left'); arrowBtn(p, 'right'); } };
 
   showHome();
 })();
