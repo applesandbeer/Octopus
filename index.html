@@ -32,9 +32,10 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
 .tile.right{-webkit-box-shadow:0 0 0 6px #2e9e44;box-shadow:0 0 0 6px #2e9e44}
 .tile.sel.right{-webkit-box-shadow:0 0 0 4px #1a6ee8,0 0 0 10px #2e9e44;box-shadow:0 0 0 4px #1a6ee8,0 0 0 10px #2e9e44}
 .lbl{font-size:20px;color:#555;line-height:28px}
-.lbl.c{text-align:center}
+.lbl.c{text-align:center;font-weight:600;color:#666}
+.cell.qcell{border-style:dashed;border-color:#8a8a8a}
 .qbar{background:#fff;border:2px solid #a9a9a9;border-radius:3px}
-.qn{display:block;text-align:center;font-size:58px;color:#222;font-family:Arial,Helvetica,sans-serif}
+.qn{display:block;text-align:center;font-size:50px;color:#222;font-family:Arial,Helvetica,sans-serif}
 .qq{display:block;text-align:center;font-size:58px;font-weight:bold;color:#333;font-family:Arial,Helvetica,sans-serif}
 .arrow.off{opacity:.3}
 .pulse{-webkit-animation:pulse 1.1s ease-in-out infinite;animation:pulse 1.1s ease-in-out infinite}
@@ -300,7 +301,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
 
   /* ---------------- drawings ---------------- */
   var COLORS = { red: '#e53935', blue: '#2f6fd6', green: '#2e9e5b', yellow: '#f6c90e', purple: '#8e44ad', orange: '#f57c00',
-    black: '#3a3a3a', white: '#ffffff' };
+    black: '#3a3a3a', white: '#ffffff', teal: '#3fb39e', paleyellow: '#f4ec8f', navy: '#2b3a67' };
   var COLOR_NAMES = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
   var NV_COLORS = ['blue', 'yellow', 'green', 'black'];
   var SHAPES_PLAIN = ['circle', 'square', 'triangle', 'star', 'heart', 'diamond', 'plus'];
@@ -370,7 +371,32 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
   }
 
   var POS = { 1: [[50, 50]], 2: [[28, 50], [72, 50]], 3: [[50, 28], [27, 71], [73, 71]] };
+  // The tile from the slide's Nonverbal example: half white, half colored, with a shape inside the colored half.
+  function splitSVG(fig) {
+    var bg = COLORS[fig.color] || fig.color, fg = COLORS[fig.color2] || fig.color2, inner;
+    if (fig.inner === 'round') inner = '<path d="M22 55 L78 55 L78 70 Q78 88 60 88 L40 88 Q22 88 22 70 Z" fill="' + fg + '" stroke="rgba(0,0,0,.35)" stroke-width="1.2"/>';
+    else inner = '<polygon points="27,55 73,55 82,88 18,88" fill="' + fg + '" stroke="rgba(0,0,0,.35)" stroke-width="1.2" stroke-linejoin="round"/>';
+    return '<g transform="rotate(' + (fig.rot || 0) + ' 50 50)"><rect x="-1" y="-1" width="102" height="102" fill="#ffffff"/>' +
+      '<rect x="-1" y="50" width="102" height="51" fill="' + bg + '"/>' + inner +
+      '<line x1="-1" y1="50" x2="101" y2="50" stroke="#8a8a8a" stroke-width="1.5"/></g>';
+  }
+  // Line drawings for the "put together" puzzles.
+  var LINE_PARTS = { top: [15, 15, 85, 15], bottom: [15, 85, 85, 85], left: [15, 15, 15, 85], right: [85, 15, 85, 85],
+    d1: [15, 15, 85, 85], d2: [85, 15, 15, 85], vmid: [50, 15, 50, 85], hmid: [15, 50, 85, 50] };
+  function linesSVG(fig) {
+    var s = '', i, q, c = COLORS[fig.color] || '#2b3a67';
+    for (i = 0; i < fig.parts.length; i++) {
+      q = fig.parts[i];
+      if (q === 'circle') s += '<circle cx="50" cy="50" r="19" fill="none" stroke="' + c + '" stroke-width="6"/>';
+      else if (q === 'dot') s += '<circle cx="50" cy="50" r="7" fill="' + c + '"/>';
+      else s += '<line x1="' + LINE_PARTS[q][0] + '" y1="' + LINE_PARTS[q][1] + '" x2="' + LINE_PARTS[q][2] + '" y2="' + LINE_PARTS[q][3] +
+        '" stroke="' + c + '" stroke-width="6" stroke-linecap="round"/>';
+    }
+    return s;
+  }
   function figureSVG(fig, px, inline) {
+    if (fig.shape === 'split') return svgWrap(splitSVG(fig), px, inline);
+    if (fig.shape === 'lines') return svgWrap(linesSVG(fig), px, inline);
     var n = fig.count || 1, r = n > 1 ? 19 : (SIZE_R[fig.size] || 38), s = '', i, p = POS[n];
     for (i = 0; i < p.length; i++) s += shapeSVG(fig.shape, p[i][0], p[i][1], r, fig.color, fig.fill, fig.rot || 0);
     return svgWrap(s, px, inline);
@@ -417,7 +443,16 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
   var FAR_ANIMAL = [['🐕', 'dog'], ['🐘', 'elephant'], ['🐟', 'fish'], ['🐄', 'cow'], ['🐢', 'turtle']];
   var FAR_VEHICLE = [['🚗', 'car'], ['🚌', 'bus'], ['🚲', 'bicycle'], ['🚂', 'train']];
   var FAR_THING = [['🎸', 'guitar'], ['👟', 'shoe'], ['⚽', 'ball'], ['🔑', 'key'], ['🎩', 'hat'],
-    ['🔨', 'hammer'], ['⏰', 'clock'], ['🏠', 'house'], ['📕', 'book']];
+    ['🔨', 'hammer'], ['⏰', 'clock'], ['🏠', 'house'], ['📕', 'book'], ['@chair', 'chair'], ['@chair', 'chair']];
+  // Pictures drawn by hand where an emoji is missing on older iPads (the slide's Verbal example uses a chair).
+  var PIC_SVG = {
+    chair: '<rect x="31" y="6" width="6" height="58" fill="#7a4e26"/><rect x="61" y="6" width="6" height="52" fill="#7a4e26"/>' +
+      '<rect x="31" y="6" width="36" height="7" fill="#8b5a2b"/><rect x="40" y="13" width="4" height="40" fill="#9c6b3a"/>' +
+      '<rect x="47" y="13" width="4" height="40" fill="#9c6b3a"/><rect x="54" y="13" width="4" height="40" fill="#9c6b3a"/>' +
+      '<polygon points="27,52 69,52 78,63 36,63" fill="#a8743f" stroke="#6b4423" stroke-width="1"/>' +
+      '<rect x="36" y="63" width="5" height="31" fill="#6b4423"/><rect x="73" y="63" width="5" height="31" fill="#6b4423"/>' +
+      '<rect x="28" y="56" width="4" height="30" fill="#5e3b1d"/><rect x="65" y="56" width="4" height="24" fill="#5e3b1d"/>'
+  };
   function cat() { var out = [], i; for (i = 0; i < arguments.length; i++) out = out.concat(arguments[i]); return out; }
 
   var VCATS = [
@@ -471,6 +506,17 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     { id: 'sky', m: [['🌙', 'moon'], ['⭐', 'star'], ['☀️', 'sun'], ['☁️', 'cloud'], ['🌈', 'rainbow'], ['⚡', 'lightning']],
       v: [{ d: 1, label: 'things you see in the sky', x: cat(FAR_FOOD, FAR_ANIMAL, FAR_THING) },
         { d: 2, label: 'things you see in the sky', x: [['🌲', 'tree'], ['🏠', 'house'], ['🌷', 'tulip'], ['🌊', 'ocean wave']] }] },
+    { id: 'yellow', m: [['🍌', 'banana'], ['🌻', 'sunflower'], ['🐤', 'chick'], ['⭐', 'star'], ['🍋', 'lemon']],
+      v: [{ d: 3, label: 'yellow things', x: [['🍎', 'apple'], ['🐸', 'frog'], ['🍇', 'grapes'], ['🐳', 'whale'], ['🌹', 'rose']] }] },
+    { id: 'red', m: [['🍎', 'apple'], ['🍓', 'strawberry'], ['🚒', 'fire truck'], ['🌹', 'rose'], ['🐞', 'ladybug'], ['🍒', 'cherries']],
+      v: [{ d: 3, label: 'red things', x: [['🍌', 'banana'], ['🐸', 'frog'], ['🐳', 'whale'], ['🌻', 'sunflower'], ['🐤', 'chick']] }] },
+    { id: 'light', m: [['💡', 'light bulb'], ['🔦', 'flashlight'], ['🕯️', 'candle'], ['☀️', 'sun'], ['⭐', 'star']],
+      v: [{ d: 2, label: 'things that give light', x: [['📕', 'book'], ['🔑', 'key'], ['🎈', 'balloon'], ['@chair', 'chair'], ['🍎', 'apple']] }] },
+    { id: 'buildings', m: [['🏠', 'house'], ['🏫', 'school'], ['🏥', 'hospital'], ['🏪', 'store'], ['🏰', 'castle'], ['⛪', 'church']],
+      v: [{ d: 1, label: 'buildings', x: cat(FAR_FOOD, FAR_ANIMAL, FAR_VEHICLE) },
+        { d: 2, label: 'buildings', x: [['🌳', 'tree'], ['⛺', 'tent'], ['🚂', 'train']] }] },
+    { id: 'tools', m: [['🔨', 'hammer'], ['🔧', 'wrench'], ['🔩', 'nut and bolt'], ['✂️', 'scissors'], ['⛏️', 'pick']],
+      v: [{ d: 2, label: 'tools', x: cat(FAR_FOOD, FAR_ANIMAL, FAR_VEHICLE) }] },
     { id: 'round', m: [['⚽', 'soccer ball'], ['🏀', 'basketball'], ['🍊', 'orange'], ['🌕', 'full moon'], ['🍪', 'cookie']],
       v: [{ d: 3, label: 'round things', x: [['📕', 'book'], ['⭐', 'star'], ['🍌', 'banana'], ['🔑', 'key']] }] }
   ];
@@ -499,8 +545,16 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
   }
 
   /* ================= NONVERBAL ================= */
-  function copyFig(f) { return { shape: f.shape, color: f.color, size: f.size, fill: f.fill, count: f.count, rot: f.rot || 0 }; }
+  function copyFig(f) {
+    var c = { shape: f.shape, color: f.color, size: f.size, fill: f.fill, count: f.count, rot: f.rot || 0 };
+    if (f.color2) c.color2 = f.color2;
+    if (f.inner) c.inner = f.inner;
+    if (f.parts) c.parts = f.parts.slice();
+    return c;
+  }
   function figKey(f) {
+    if (f.shape === 'lines') return 'L' + f.parts.slice().sort().join('+');
+    if (f.shape === 'split') return ['split', f.color, f.color2, f.inner, mod(f.rot || 0, 360)].join('|');
     var turn = indexOf(SHAPES_TURN, f.shape) >= 0;
     return [f.shape, f.color, f.count > 1 ? 'big' : f.size, f.shape === 'halfbox' ? 'solid' : f.fill, f.count, turn ? mod(f.rot || 0, 360) : 0].join('|');
   }
@@ -859,10 +913,88 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
       explain: 'The missing piece has to match the pattern all around it.', key: 'p' + JSON.stringify(p) + hx + ',' + hy };
   }
 
-  var NV_SUBS = ['pattern', 'analogy', 'matrix'];
+  /* --- 2x2 with the slide's half-colored tiles: the tile turns, its colors trade places, or the inside shape changes --- */
+  var SPLIT_COLORS = ['teal', 'paleyellow', 'blue', 'green'];
+  var SPLIT_PLAN = {
+    1: { col: ['rot90', 'rot270', 'rot180', 'swap'], row: ['swap', 'inner'] },
+    2: { col: ['rot90', 'rot270', 'inner', 'rot180'], row: ['swap', 'recolor'] },
+    3: { col: ['rot90swap', 'rot270inner', 'rot90', 'rot270'], row: ['swap', 'inner', 'recolor'] }
+  };
+  var SPLIT_WORDS = { rot90: 'the picture makes a quarter turn', rot270: 'the picture makes a quarter turn', rot180: 'the picture turns upside down',
+    swap: 'the two colors trade places', inner: 'the shape inside changes', rot90swap: 'the picture turns and the two colors trade places',
+    rot270inner: 'the picture turns and the shape inside changes' };
+  function splitApply(f, code) {
+    var g = copyFig(f), t;
+    if (code.indexOf('rot90') === 0) g.rot = mod(g.rot + 90, 360);
+    if (code.indexOf('rot270') === 0) g.rot = mod(g.rot + 270, 360);
+    if (code === 'rot180') g.rot = mod(g.rot + 180, 360);
+    if (code === 'swap' || code === 'rot90swap') { t = g.color; g.color = g.color2; g.color2 = t; }
+    if (code === 'inner' || code === 'rot270inner') g.inner = g.inner === 'trap' ? 'round' : 'trap';
+    return g;
+  }
+  function nvSplitTry(diff) {
+    var plan = SPLIT_PLAN[diff], colCode = pick(plan.col), rowCode = pick(plan.row), x;
+    if ((colCode.indexOf('swap') >= 0 && rowCode === 'swap') || (colCode.indexOf('inner') >= 0 && rowCode === 'inner')) return null;
+    var cols = diff === 1 ? shuffle(['teal', 'paleyellow']) : shuffle(SPLIT_COLORS);
+    var A = { shape: 'split', color: cols[0], color2: cols[1], inner: diff === 1 ? 'trap' : pick(['trap', 'round']),
+      rot: pick([0, 90, 180, 270]), size: 'big', fill: 'solid', count: 1 };
+    var B = splitApply(A, colCode), C;
+    if (rowCode === 'recolor') { C = copyFig(A); C.color = pickOther(SPLIT_COLORS, [A.color, A.color2]); }
+    else C = splitApply(A, rowCode);
+    var D = splitApply(C, colCode);
+    if (figKey(A) === figKey(B) || figKey(A) === figKey(C) || figKey(C) === figKey(D) || figKey(B) === figKey(D)) return null;
+    // wrong answers like the slide's: the top picture turned the other way, the bottom picture flipped, a copy of the first picture
+    var first = [], rest = [];
+    x = copyFig(B); x.rot = mod(B.rot + 180, 360); first.push(x);
+    x = copyFig(C); x.rot = mod(C.rot + 180, 360); first.push(x);
+    first.push(copyFig(A));
+    x = copyFig(D); x.rot = mod(D.rot + 180, 360); x.inner = D.inner === 'trap' ? 'round' : 'trap'; first.push(x);
+    rest.push(copyFig(B), copyFig(C), splitApply(D, 'swap'), splitApply(D, 'inner'));
+    x = copyFig(D); x.rot = mod(D.rot + 90, 360); rest.push(x);
+    x = copyFig(D); x.rot = mod(D.rot + 270, 360); rest.push(x);
+    x = copyFig(D); x.rot = mod(D.rot + 180, 360); rest.push(x);
+    var wrong = pickFive(D, shuffle(first).concat(shuffle(rest)), figKey);
+    if (wrong.length < 4) return null;
+    var options = shuffle(wrong.concat([D]));
+    return { kind: 'nonverbal', sub: 'analogy', diff: diff, grid: [A, B, C], options: options, answer: indexOf(options, D),
+      explain: 'Look at the top row: ' + SPLIT_WORDS[colCode] + '. The bottom picture changes the same way.',
+      key: 's' + figKey(A) + figKey(B) + figKey(C) };
+  }
+
+  /* --- "Put together" (spatial): the first two pictures in a row combine to make the third --- */
+  var PARTS = ['top', 'bottom', 'left', 'right', 'd1', 'd2', 'vmid', 'hmid', 'circle', 'dot'];
+  function linesFig(parts) { return { shape: 'lines', parts: parts.slice(), color: 'navy', size: 'big', fill: 'solid', count: 1, rot: 0 }; }
+  function unionParts(a, b) { var out = a.slice(), i; for (i = 0; i < b.length; i++) if (indexOf(out, b[i]) < 0) out.push(b[i]); return out; }
+  function nvCombineTry(diff) {
+    var cells = [], sets = [], r, pool, X, Y, n1 = diff === 3 ? 2 : 1, i;
+    for (r = 0; r < 3; r++) {
+      pool = shuffle(PARTS);
+      X = pool.slice(0, rint(1, n1)); Y = pool.slice(2, 2 + rint(1, n1));
+      cells.push(linesFig(X), linesFig(Y), linesFig(unionParts(X, Y)));
+      sets.push([X, Y]);
+    }
+    var ans = cells[8], U = ans.parts, spare = without(PARTS, U), first = [], rest = [];
+    cells[8] = null;
+    first.push(linesFig(sets[2][0]), linesFig(sets[2][1]), linesFig(U.concat([pick(spare)])));
+    for (i = 0; i < U.length; i++) {
+      if (U.length > 1) rest.push(linesFig(without(U, [U[i]])));
+      rest.push(linesFig(without(U, [U[i]]).concat([pick(spare)])));
+    }
+    rest.push(linesFig(unionParts(sets[1][0], sets[1][1])), linesFig(U.concat([pick(spare)])));
+    var wrong = pickFive(ans, shuffle(first).concat(shuffle(rest)), figKey);
+    if (wrong.length < 4) return null;
+    var options = shuffle(wrong.concat([ans])), keys = [];
+    for (i = 0; i < 8; i++) keys.push(figKey(cells[i]));
+    return { kind: 'nonverbal', sub: 'matrix', diff: diff, cells: cells, missing: 8, options: options, answer: indexOf(options, ans),
+      explain: 'In each row, put the first two pictures together and you get the third picture.', key: 'c' + keys.join(',') };
+  }
+
+  var NV_SUBS = { 1: ['pattern', 'split', 'analogy', 'matrix'], 2: ['pattern', 'split', 'analogy', 'matrix', 'combine'],
+    3: ['pattern', 'split', 'analogy', 'matrix', 'combine'] };
   function nvGenerate(diff, sub) {
-    sub = sub || pick(NV_SUBS);
-    var fn = sub === 'pattern' ? pcTry : (sub === 'matrix' ? nvMatrixTry : nvAnalogyTry), it = null, tries = 0;
+    sub = sub || pick(NV_SUBS[diff]);
+    var fn = sub === 'pattern' ? pcTry : (sub === 'matrix' ? nvMatrixTry : (sub === 'split' ? nvSplitTry : (sub === 'combine' ? nvCombineTry : nvAnalogyTry)));
+    var it = null, tries = 0;
     while (!it && tries++ < 300) it = fn(diff);
     while (!it) it = nvAnalogyTry(1);
     return it;
@@ -872,9 +1004,9 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
   var OBJ = [['🎁', 'gift'], ['🍎', 'apple'], ['⭐', 'star'], ['🐟', 'fish'], ['🌸', 'flower'],
     ['⚽', 'ball'], ['🍪', 'cookie'], ['🎈', 'balloon'], ['🐞', 'ladybug'], ['🍌', 'banana']];
   var Q_TYPES = {
-    1: ['up1', 'dotsUp', 'abShapes', 'obj', 'obj', 'analog'],
-    2: ['down1', 'abNum', 'abcShapes', 'dotsDown', 'up1big', 'obj', 'analog'],
-    3: ['up2', 'aabb', 'down2', 'abcNum', 'obj', 'analog', 'matrix', 'matrix']
+    1: ['up1', 'dotsUp', 'abShapes', 'obj', 'analog', 'match'],
+    2: ['down1', 'abNum', 'abcShapes', 'dotsDown', 'up1big', 'obj', 'analog', 'match'],
+    3: ['up2', 'aabb', 'down2', 'abcNum', 'obj', 'analog', 'matrix', 'sum']
   };
   function plainFig(shape, color) { return { shape: shape, color: color, size: 'big', fill: 'solid', count: 1, rot: 0 }; }
   function figWord(f) { return f.color + ' ' + SHAPE_WORD[f.shape]; }
@@ -989,8 +1121,32 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     return { kind: 'quant', layout: 'matrix', diff: 3, mode: 'num', seq: seq, options: options, answer: indexOf(options, ans),
       explain: ex, key: 'x' + seq.join(',') };
   }
+  // 2x2 counting: 3 dots go with the number 3, so 5 dots go with ?
+  function dotWords(n) { return n + (n === 1 ? ' dot' : ' dots'); }
+  function qMatch(diff) {
+    var flip = diff > 1 && Math.random() < 0.5, a = rint(1, 5), c;
+    do { c = rint(1, diff === 1 ? 5 : 7); } while (c === a);
+    var wrong = numDistractors(c, [a], 1, 8), options = shuffle(wrong.concat([c]));
+    return { kind: 'quant', layout: 'analogy', diff: diff, mode: flip ? 'dots' : 'num', cellModes: flip ? ['num', 'dots', 'num'] : ['dots', 'num', 'dots'],
+      seq: [a, a, c], options: options, answer: indexOf(options, c),
+      explain: 'Count the dots. ' + cap(dotWords(a)) + ' go' + (a === 1 ? 'es' : '') + ' with the number ' + a + ', so ' +
+        dotWords(c) + ' go' + (c === 1 ? 'es' : '') + ' with the number ' + c + '.',
+      key: 'mt' + (flip ? 'f' : '') + a + ',' + c };
+  }
+  // 3x3 adding: in each row the first two numbers make the third
+  function qSum() {
+    var seq = [], r, a, b;
+    for (r = 0; r < 3; r++) { a = rint(1, 4); b = rint(1, 4); seq.push(a, b, a + b); }
+    var ans = seq[8];
+    seq[8] = null;
+    var wrong = numDistractors(ans, [seq[6], seq[7], seq[5]], 0, 20), options = shuffle(wrong.concat([ans]));
+    return { kind: 'quant', layout: 'matrix', diff: 3, mode: 'num', seq: seq, options: options, answer: indexOf(options, ans),
+      explain: 'In each row, the first two numbers add up to the third: ' + seq[6] + ' and ' + seq[7] + ' make ' + ans + '.', key: 's' + seq.join(',') };
+  }
   function qGenerate(diff, type) {
     type = type || pick(Q_TYPES[diff]);
+    if (type === 'match') return qMatch(diff);
+    if (type === 'sum') return qSum();
     if (type === 'obj') return qObjects(diff);
     if (type === 'analog') return qAnalogy(diff);
     if (type === 'matrix') return qMatrix();
@@ -1012,8 +1168,22 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     for (i = 0; i < n; i++) out.push(genItem(kind, diffFor(i, n), ctx));
     return out;
   }
-  var PRACTICE_SUBS = { verbal: [null, null, null], nonverbal: ['pattern', 'analogy', 'matrix'], quant: ['up1', 'obj', 'analog'] };
-  var DEMO_SUB = { verbal: null, nonverbal: 'pattern', quant: 'up1' };
+  var PRACTICE_SUBS = { verbal: [null, null, null], nonverbal: ['split', 'pattern', 'matrix'], quant: ['up1', 'obj', 'match'] };
+  // The three examples from HISD's parent presentation, rebuilt exactly. The how-to animation solves these.
+  function splitFig(bg, fg, inner, rot) { return { shape: 'split', color: bg, color2: fg, inner: inner, rot: rot, size: 'big', fill: 'solid', count: 1 }; }
+  var EXAMPLES = {
+    verbal: { kind: 'verbal', diff: 1, answer: 3, label: 'fruit', odd: 'chair', key: 'ex-v',
+      pics: [{ e: '🍌', n: 'banana' }, { e: '🍐', n: 'pear' }, { e: '🍊', n: 'orange' },
+        { e: '@chair', n: 'chair' }, { e: '🍑', n: 'peach' }, { e: '🍎', n: 'apple' }] },
+    nonverbal: { kind: 'nonverbal', sub: 'analogy', diff: 1, answer: 0, key: 'ex-nv',
+      grid: [splitFig('paleyellow', 'teal', 'trap', 0), splitFig('paleyellow', 'teal', 'trap', 90), splitFig('teal', 'paleyellow', 'trap', 0)],
+      options: [splitFig('teal', 'paleyellow', 'trap', 90), splitFig('paleyellow', 'teal', 'trap', 270), splitFig('teal', 'paleyellow', 'trap', 180),
+        splitFig('paleyellow', 'teal', 'trap', 0), splitFig('teal', 'paleyellow', 'round', 270)],
+      explain: 'Look at the top row: the picture turns so the colored half moves from the bottom to the side. The bottom picture turns the same way.' },
+    quant: { kind: 'quant', layout: 'series', diff: 1, mode: 'num', seq: [6, 7, 8, 9], options: [12, 10, 13, 9, 11], answer: 1, key: 'ex-q',
+      explain: 'The numbers go up by one: 6, 7, 8, 9, 10. So 10 comes next.' }
+  };
+
   function genPractice(kind, ctx) {
     var out = [], i, subs = PRACTICE_SUBS[kind];
     for (i = 0; i < subs.length; i++) out.push(genItem(kind, 1, ctx, subs[i]));
@@ -1024,9 +1194,9 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     return it.explain || '';
   }
   var KIND = {
-    verbal: { name: 'Verbal', color: '#3157d5' },
-    nonverbal: { name: 'Nonverbal', color: '#9c4a9f' },
-    quant: { name: 'Quantitative', color: '#43a047' }
+    verbal: { name: 'Verbal', color: '#375dba' },
+    nonverbal: { name: 'Nonverbal', color: '#9b5a98' },
+    quant: { name: 'Quantitative', color: '#5aae63' }
   };
   var DIRECTIONS = {
     verbal: 'Look at the six pictures. Five of the pictures go together in some way. One picture does not belong. Touch the picture that does not belong. Then touch the arrow.',
@@ -1080,7 +1250,8 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
   function gridCells(p, n, cs, g, y, content) {
     var total = n * cs + (n - 1) * g, x0 = Math.round((928 - total) / 2), i;
     for (i = 0; i < n * n; i++) {
-      p.appendChild(el('div', 'cell', box(x0 + (i % n) * (cs + g), y + Math.floor(i / n) * (cs + g), cs, cs), content(i, cs - 4)));
+      var html = content(i, cs - 4);
+      p.appendChild(el('div', html.indexOf('class="qq"') >= 0 ? 'cell qcell' : 'cell', box(x0 + (i % n) * (cs + g), y + Math.floor(i / n) * (cs + g), cs, cs), html));
     }
   }
   function optionRow(p, content, letters, y0, tw, th) {
@@ -1097,13 +1268,15 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     var tiles = [], tw = 230, th = 172, gx = 40, gy = 62, x0 = Math.round((928 - (3 * tw + 2 * gx)) / 2), y0 = 34, i, x, y;
     for (i = 0; i < 6; i++) {
       x = x0 + (i % 3) * (tw + gx); y = y0 + Math.floor(i / 3) * (th + gy);
-      var t = tile(p, x, y, tw, th, it.pics[i].e, 'font-size:110px;line-height:' + (th - 4) + 'px;');
-      addClass(t, 'emoji');
+      var e = it.pics[i].e, t;
+      if (e.charAt(0) === '@') t = tile(p, x, y, tw, th, svgWrap(PIC_SVG[e.slice(1)], 140));
+      else { t = tile(p, x, y, tw, th, e, 'font-size:110px;line-height:' + (th - 4) + 'px;'); addClass(t, 'emoji'); }
       tiles.push(t);
       p.appendChild(el('div', 'lbl', box(x + 2, y + th + 4, 40, 28), String(i + 1)));
     }
     return tiles;
   }
+  function figCell(fig, h, px) { return fig.shape === 'split' ? figureSVG(fig, h) : figureSVG(fig, px); }
   function renderNonverbal(it, p) {
     var sub = it.sub || 'analogy';
     if (sub === 'pattern') {
@@ -1111,11 +1284,11 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
       return optionRow(p, function (i) { return pcPieceSVG(it.options[i], 116); }, false, 360, 132, 132);
     }
     if (sub === 'matrix') {
-      gridCells(p, 3, 94, 8, 18, function (i, h) { return it.cells[i] ? figureSVG(it.cells[i], 82) : qmark(h); });
+      gridCells(p, 3, 94, 8, 18, function (i, h) { return it.cells[i] ? figCell(it.cells[i], h, 82) : qmark(h); });
     } else {
-      gridCells(p, 2, 132, 14, 24, function (i, h) { return i < 3 ? figureSVG(it.grid[i], 116) : qmark(h); });
+      gridCells(p, 2, 132, 14, 24, function (i, h) { return i < 3 ? figCell(it.grid[i], h, 116) : qmark(h); });
     }
-    return optionRow(p, function (i) { return figureSVG(it.options[i], 116); }, false, 360, 132, 132);
+    return optionRow(p, function (i, h) { return figCell(it.options[i], h, 116); }, false, 360, 132, 132);
   }
   // Each kind of object gets its own row(s) so it is easy to count.
   function objRows(it, v) {
@@ -1145,16 +1318,17 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
     var lh = Math.round(fs * 1.18), top = Math.round((h - L.rows.length * lh) / 2);
     return '<div class="emoji" style="position:absolute;left:0;right:0;top:' + top + 'px;font-size:' + fs + 'px;line-height:' + lh + 'px;white-space:nowrap">' + L.rows.join('<br>') + '</div>';
   }
-  function quantContent(it, v, px, h) {
-    if (it.mode === 'num') return '<span class="qn" style="line-height:' + h + 'px">' + v + '</span>';
-    if (it.mode === 'dots') return dotsSVG(v, px);
-    if (it.mode === 'objs') return objsHTML(it, v, h);
+  function quantContent(it, v, px, h, mode) {
+    mode = mode || it.mode;
+    if (mode === 'num') return '<span class="qn" style="line-height:' + h + 'px">' + v + '</span>';
+    if (mode === 'dots') return dotsSVG(v, px);
+    if (mode === 'objs') return objsHTML(it, v, h);
     return figureSVG(v, px);
   }
   function renderQuant(it, p) {
     var layout = it.layout || 'series';
     if (layout === 'analogy') {
-      gridCells(p, 2, 132, 14, 24, function (i, h) { return i < 3 ? quantContent(it, it.seq[i], 100, h) : qmark(h); });
+      gridCells(p, 2, 132, 14, 24, function (i, h) { return i < 3 ? quantContent(it, it.seq[i], 100, h, it.cellModes ? it.cellModes[i] : null) : qmark(h); });
       return optionRow(p, function (i, h) { return quantContent(it, it.options[i], 100, h); }, true, 360, 132, 132);
     }
     if (layout === 'matrix') {
@@ -1353,7 +1527,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
   // Wordless animated instructions, like the real test: a hand picks the answer, then touches the arrow.
   function showHowTo(S, demo) {
     var P = S.parts[S.partIdx], info = KIND[P.kind], done = false;
-    demo = demo || genItem(P.kind, 1, { recent: [], keys: {} }, DEMO_SUB[P.kind]);
+    demo = demo || clone(EXAMPLES[P.kind]);
     clear();
     topBar({ title: info.name + ' · How to', onExit: function () { exitSession(S); },
       onSpeak: speakBtn(function () { say(DIRECTIONS[P.kind]); }) });
@@ -1629,7 +1803,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
   }
 
   // test hooks for automated checks (harmless in normal use)
-  window.__pp = { genItems: genItems, genItem: genItem, explain: explain, figKey: figKey, pcSample: pcSample, sigDiff: sigDiff,
+  window.__pp = { examples: EXAMPLES, genItems: genItems, genItem: genItem, explain: explain, figKey: figKey, pcSample: pcSample, sigDiff: sigDiff,
     setLimit: function (ms) { LIMIT_MS = ms; }, settings: settings,
     preview: function (it) { clear(); var p = panel(KIND[it.kind].color); renderItem(it, p); arrowBtn(p, 'left'); arrowBtn(p, 'right'); } };
 

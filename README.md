@@ -6,12 +6,20 @@ The goal is to make the child comfortable with the **touchscreen mechanics** and
 
 ## What's in it
 
-| Part | Question types |
-|---|---|
-| **Touch Practice** | Spoken coaching: tap stars, use the next and back arrows, change an answer. |
-| **Verbal** (blue box) | Six pictures numbered 1–6. Five share an idea (fruit, things that fly, cold things…) and she touches the one that doesn't belong. |
-| **Nonverbal** (purple box) | Three types, answers numbered 1–5:<br>• **Missing piece:** a big pattern with a square cut out.<br>• **2×2 puzzle:** the top pair changes in some way, and the bottom pair should change the same way.<br>• **3×3 grid:** for example, each row has a small, a medium and a big circle. |
-| **Quantitative** (green box) | Answers labeled A–E:<br>• **Rows:** numbers, dots, shapes or boxes of objects (1 gift, 2 gifts, 3 gifts…) where she picks what comes next.<br>• **Number pairs:** 3 goes to 4, so 6 goes to ?<br>• **3×3 number grids.** |
+**Your slide's three examples are built in exactly.** At the start of each part, the wordless how-to animation solves the example from HISD's parent presentation:
+- **Verbal:** banana, pear, orange, **chair**, peach, apple. The chair doesn't belong.
+- **Nonverbal:** the half-colored tiles. The top tile turns a quarter turn, so the answer is **1**.
+- **Quantitative:** 6 7 8 9 ?, with answers 12, 10, 13, 9 and 11. The answer is **B (10)**.
+
+### Topics covered
+
+| Part | What the real test covers | Question types in this app |
+|---|---|---|
+| **Verbal** (blue) | Six pictures. Find the one that doesn't share the idea the other five share. | Ideas based on **groups** (fruit, animals, vehicles, clothes, tools, buildings…), **where things live** (land vs. water), **what things do** (fly, give light, make music, draw or write) and **how things look** (red, yellow, round, cold). |
+| **Nonverbal** (purple) | Relationships among shapes: color, order and which way they face. The Naglieri Nonverbal test families are pattern completion, reasoning by analogy, serial reasoning and spatial visualization. | **Missing piece** (pattern completion)<br>**2×2 puzzles** (analogy), including the slide's half-colored tiles that turn, trade colors or change the inside shape<br>**3×3 grids** (serial reasoning: sizes, shapes, colors, counts, turning)<br>**Put together** (spatial: two pictures combine to make the third) |
+| **Quantitative** (green) | Numbers and shapes in a pattern, using basic math. | **Number rows** (up or down by 1 or 2, repeating patterns)<br>**Dot and shape rows**<br>**Boxes of objects** (1 gift, 2 gifts…)<br>**Number pairs** (3→4, so 6→?)<br>**Dots ↔ numbers** (counting)<br>**3×3 number grids** (counting up, each row has one of each, adding) |
+
+Questions get harder through each part, the way the real test does.
 
 ## Matches the real test
 
