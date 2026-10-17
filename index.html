@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Puzzles">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#ffffff">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
+<title>Puzzle Practice</title>
+<style>
+*{-webkit-box-sizing:border-box;box-sizing:border-box}
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#fff}
+body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Helvetica Neue",Helvetica,Arial,sans-serif;color:#222;
+  -webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;-webkit-touch-callout:none;
+  -webkit-tap-highlight-color:rgba(0,0,0,0);-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}
+#stage{position:absolute;left:0;top:0;width:1000px;height:750px;overflow:hidden;background:#fff;-webkit-transform-origin:0 0;transform-origin:0 0}
+#rotate{display:none;position:absolute;left:0;right:0;text-align:center;font-size:18px;color:#7a8597;padding:0 16px}
+.tile *,.cell *,.arrow *,.btn *,.hold *,.chip *{pointer-events:none}
+.emoji{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-align:center}
+
+/* test screens */
+.topbar{background:#fff;border-bottom:1px solid #e4e4e4}
+.bartitle{text-align:center;line-height:60px;font-size:20px;color:#8c8c8c}
+.panel{border:6px solid #999;background:#ebebeb}
+.tile,.cell{background:#fff;border:2px solid #a9a9a9;border-radius:3px;text-align:center}
+.tile.sel{border-color:#1a6ee8;-webkit-box-shadow:0 0 0 5px #1a6ee8;box-shadow:0 0 0 5px #1a6ee8;background:#eef5ff}
+.tile.hint{-webkit-box-shadow:0 0 0 7px #ffb300;box-shadow:0 0 0 7px #ffb300}
+.tile.sel.hint{-webkit-box-shadow:0 0 0 4px #1a6ee8,0 0 0 10px #ffb300;box-shadow:0 0 0 4px #1a6ee8,0 0 0 10px #ffb300}
+.tile.right{-webkit-box-shadow:0 0 0 6px #2e9e44;box-shadow:0 0 0 6px #2e9e44}
+.tile.sel.right{-webkit-box-shadow:0 0 0 4px #1a6ee8,0 0 0 10px #2e9e44;box-shadow:0 0 0 4px #1a6ee8,0 0 0 10px #2e9e44}
+.lbl{font-size:20px;color:#555;line-height:28px}
+.lbl.c{text-align:center}
+.qbar{background:#fff;border:2px solid #a9a9a9;border-radius:3px}
+.qn{display:block;text-align:center;font-size:58px;color:#222;font-family:Arial,Helvetica,sans-serif}
+.qq{display:block;text-align:center;font-size:58px;font-weight:bold;color:#333;font-family:Arial,Helvetica,sans-serif}
+.arrow.off{opacity:.3}
+.pulse{-webkit-animation:pulse 1.1s ease-in-out infinite;animation:pulse 1.1s ease-in-out infinite}
+@-webkit-keyframes pulse{0%{-webkit-transform:scale(1)}50%{-webkit-transform:scale(1.15)}100%{-webkit-transform:scale(1)}}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+.explain{font-size:20px;line-height:26px;color:#444;text-align:center}
+
+/* buttons and menus */
+.btn{border-radius:18px;text-align:center;color:#fff;cursor:pointer;overflow:hidden}
+.btn.down{opacity:.7}
+.btn.light{background:#f1f3f6;color:#333;border:2px solid #d5dae1}
+.btn.on{background:#1a6ee8;color:#fff;border-color:#1a6ee8}
+.hold{border-radius:14px;background:#f1f3f6;color:#666;text-align:center;overflow:hidden;cursor:pointer}
+.hold .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:#c9d3dd}
+.hold.holding .fill{width:100%;-webkit-transition-property:width;transition-property:width;-webkit-transition-timing-function:linear;transition-timing-function:linear}
+.hold span{position:relative}
+.title{text-align:center;font-size:52px;font-weight:bold;color:#2b3a67}
+.subtitle{text-align:center;font-size:20px;color:#7a8597}
+.tip{font-size:17px;color:#8a94a6;line-height:22px}
+.card{border-radius:22px;color:#fff;text-align:center;cursor:pointer}
+.card.down,.warm.down,.allbtn.down{opacity:.75}
+.cname{font-size:32px;font-weight:bold}
+.csub{font-size:19px;opacity:.9}
+.h2{font-size:24px;font-weight:bold;color:#2b3a67}
+.setlbl{font-size:20px;color:#333;line-height:24px}
+.scroll{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;border:1px solid #e1e5ea;border-radius:12px;background:#fafbfc}
+.row{position:relative;padding:14px 18px;border-bottom:1px solid #e6e9ee;font-size:19px;line-height:26px;color:#333;cursor:pointer}
+.row.down{background:#eef3fb}
+.row .d{color:#7a8597;font-size:16px}
+.chip{position:relative;display:inline-block;width:58px;height:58px;margin:0 10px 10px 0;border-radius:10px;text-align:center;line-height:58px;font-size:22px;font-weight:bold;color:#fff;cursor:pointer}
+.chip.ok{background:#2e9e44}.chip.no{background:#e57373}.chip.skip{background:#b0b7c3}
+.chip.down{opacity:.7}
+.ptitle{font-size:22px;font-weight:bold;color:#2b3a67;margin:6px 0 4px}
+.pmeta{font-size:17px;color:#7a8597;margin-bottom:10px}
+.empty{padding:24px;color:#8a94a6;font-size:19px;text-align:center}
+.big{font-size:44px;font-weight:bold;color:#2b3a67;text-align:center}
+.mid{font-size:24px;color:#555;text-align:center;line-height:32px}
+</style>
+</head>
+<body>
+<div id="rotate">Turn the phone sideways for bigger pictures.</div>
+<div id="stage"></div>
+<script>
+/*
+  Puzzle Practice: a touch-screen practice app for young children.
+  Written in plain ES5 (no let/const/arrow functions) so it runs on older iPads.
+*/
+(function () {
+  'use strict';
+
+  var W = 1000, H = 750;
+  var stage = document.getElementById('stage');
+
+  /* ---------------- small helpers ---------------- */
+  function rint(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function shuffle(arr) {
+    var a = arr.slice(), i, j, t;
+    for (i = a.length - 1; i > 0; i--) { j = Math.floor(Math.random() * (i + 1)); t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+  }
+  function indexOf(arr, v) { for (var i = 0; i < arr.length; i++) { if (arr[i] === v) return i; } return -1; }
+  function without(arr, vals) { var out = [], i; for (i = 0; i < arr.length; i++) { if (indexOf(vals, arr[i]) < 0) out.push(arr[i]); } return out; }
+  function pickOther(arr, vals) { return pick(without(arr, vals)); }
+  function now() { return new Date().getTime(); }
+  function box(x, y, w, h) { return 'position:absolute;left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;height:' + h + 'px;'; }
+  function el(tag, cls, css, html) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (css) e.style.cssText = css;
+    if (html !== undefined && html !== null) e.innerHTML = html;
+    return e;
+  }
+  function addClass(n, c) { if (n && n.classList) n.classList.add(c); }
+  function removeClass(n, c) { if (n && n.classList) n.classList.remove(c); }
+  function setClass(n, c, on) { if (on) addClass(n, c); else removeClass(n, c); }
+  function clear() { stage.innerHTML = ''; }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  /* ---------------- saved data ---------------- */
+  function load(key, def) {
+    try { var v = window.localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch (e) { return def; }
+  }
+  function save(key, val) {
+    try { window.localStorage.setItem(key, JSON.stringify(val)); return true; } catch (e) { return false; }
+  }
+  var settings = load('pp.settings', {}) || {};
+  if (typeof settings.count !== 'number') settings.count = 10;
+  if (typeof settings.speak !== 'boolean') settings.speak = true;
+  if (typeof settings.practice !== 'boolean') settings.practice = true;
+  function saveSettings() { save('pp.settings', settings); }
+
+  /* ---------------- fit the 1000x750 stage to any screen ---------------- */
+  function fit() {
+    var w = window.innerWidth || document.documentElement.clientWidth;
+    var h = window.innerHeight || document.documentElement.clientHeight;
+    var s = Math.min(w / W, h / H);
+    var x = Math.round((w - W * s) / 2), y = Math.round((h - H * s) / 2);
+    var t = 'translate(' + x + 'px,' + y + 'px) scale(' + s + ')';
+    stage.style.webkitTransform = t;
+    stage.style.transform = t;
+    var hint = document.getElementById('rotate');
+    if (hint) {
+      hint.style.display = (h > w * 1.15 && w < 700) ? 'block' : 'none';
+      hint.style.top = Math.max(8, Math.round(y / 2 - 12)) + 'px';
+    }
+  }
+  window.addEventListener('resize', fit, false);
+  window.addEventListener('orientationchange', function () { setTimeout(fit, 250); setTimeout(fit, 700); }, false);
+  fit();
+
+  /* ---------------- stop the iPad from zooming, scrolling, or bouncing ---------------- */
+  function inScroll(t) {
+    while (t && t !== document) {
+      if (t.getAttribute && t.getAttribute('data-scroll')) return true;
+      t = t.parentNode;
+    }
+    return false;
+  }
+  var supportsPassive = false;
+  try {
+    var popts = Object.defineProperty({}, 'passive', { get: function () { supportsPassive = true; return false; } });
+    window.addEventListener('pp-test', null, popts);
+  } catch (e) { supportsPassive = false; }
+  var activeOpt = supportsPassive ? { passive: false } : false;
+  document.addEventListener('touchmove', function (e) { if (!inScroll(e.target)) e.preventDefault(); }, activeOpt);
+  document.addEventListener('gesturestart', function (e) { e.preventDefault(); }, false);
+  document.addEventListener('contextmenu', function (e) { e.preventDefault(); }, false);
+  var lastTouchEnd = 0;
+  document.addEventListener('touchend', function (e) {
+    var t = now();
+    if (t - lastTouchEnd < 350 && !inScroll(e.target) && e.cancelable) e.preventDefault();
+    lastTouchEnd = t;
+  }, activeOpt);
+
+  /* ---------------- taps ---------------- */
+  function within(node, root) { while (node) { if (node === root) return true; node = node.parentNode; } return false; }
+
+  // Fires once per tap. Forgiving: a finger that wiggles but lifts on the same thing still counts.
+  function onTap(node, fn) {
+    var active = false, sx = 0, sy = 0, moved = false;
+    node.addEventListener('touchstart', function (e) {
+      active = true; moved = false;
+      var t = e.touches && e.touches[0];
+      if (t) { sx = t.clientX; sy = t.clientY; }
+      addClass(node, 'down');
+    }, false);
+    node.addEventListener('touchmove', function (e) {
+      var t = e.touches && e.touches[0];
+      if (t && (Math.abs(t.clientX - sx) > 12 || Math.abs(t.clientY - sy) > 12)) moved = true;
+    }, false);
+    node.addEventListener('touchend', function (e) {
+      removeClass(node, 'down');
+      if (!active) return;
+      active = false;
+      if (e.cancelable) e.preventDefault();
+      e.stopPropagation();
+      if (moved && inScroll(node)) return;
+      var t = e.changedTouches && e.changedTouches[0];
+      if (t && document.elementFromPoint) {
+        var hit = document.elementFromPoint(t.clientX, t.clientY);
+        if (hit && !within(hit, node)) return;
+      }
+      fn(e);
+    }, false);
+    node.addEventListener('touchcancel', function () { active = false; removeClass(node, 'down'); }, false);
+    node.addEventListener('click', function (e) { e.stopPropagation(); fn(e); }, false);
+  }
+
+  // Press and hold (for grown-up buttons the child shouldn't trigger by accident).
+  function onHold(node, ms, fn) {
+    var timer = null, fill = node.querySelector('.fill');
+    function cancel() {
+      if (timer) { clearTimeout(timer); timer = null; }
+      removeClass(node, 'holding');
+    }
+    function start(e) {
+      if (e && e.cancelable) e.preventDefault();
+      if (e) e.stopPropagation();
+      cancel();
+      if (fill) { fill.style.webkitTransitionDuration = ms + 'ms'; fill.style.transitionDuration = ms + 'ms'; }
+      addClass(node, 'holding');
+      timer = setTimeout(function () { timer = null; removeClass(node, 'holding'); fn(); }, ms);
+    }
+    node.addEventListener('touchstart', start, false);
+    node.addEventListener('touchend', function (e) { if (e.cancelable) e.preventDefault(); e.stopPropagation(); cancel(); }, false);
+    node.addEventListener('touchcancel', cancel, false);
+    node.addEventListener('mousedown', start, false);
+    node.addEventListener('mouseup', cancel, false);
+    node.addEventListener('mouseleave', cancel, false);
+  }
+
+  /* ---------------- read-aloud (built-in iPad voice) ---------------- */
+  var synth = window.speechSynthesis || null;
+  var voice = null, speakTimer = null;
+  function chooseVoice() {
+    if (!synth || !synth.getVoices) return;
+    var vs = synth.getVoices() || [], i, best = null, lang;
+    for (i = 0; i < vs.length; i++) {
+      lang = String(vs[i].lang || '').replace('_', '-');
+      if (lang.indexOf('en-US') === 0) {
+        if (!best) best = vs[i];
+        if (/Samantha|Allison|Ava|Susan|Karen/.test(vs[i].name)) { best = vs[i]; break; }
+      }
+    }
+    voice = best;
+  }
+  if (synth) { chooseVoice(); try { synth.onvoiceschanged = chooseVoice; } catch (e) { /* old browsers */ } }
+  function hush() {
+    if (speakTimer) { clearTimeout(speakTimer); speakTimer = null; }
+    if (synth) { try { synth.cancel(); } catch (e) { /* ignore */ } }
+  }
+  function say(text) {
+    if (!settings.speak || !synth || !window.SpeechSynthesisUtterance || !text) return;
+    var go = function () {
+      speakTimer = null;
+      try {
+        var u = new window.SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        u.rate = 0.9;
+        if (voice) u.voice = voice;
+        synth.speak(u);
+      } catch (e) { /* ignore */ }
+    };
+    if (speakTimer) { clearTimeout(speakTimer); speakTimer = null; }
+    if (synth.speaking || synth.pending) { try { synth.cancel(); } catch (e) { /* ignore */ } speakTimer = setTimeout(go, 150); }
+    else go();
+  }
+  document.addEventListener('visibilitychange', function () { if (document.hidden) hush(); }, false);
+
+  /* ---------------- drawings ---------------- */
+  var COLORS = { red: '#e53935', blue: '#1e63d6', green: '#2e9e44', yellow: '#f4c20d', purple: '#8e44ad', orange: '#f57c00' };
+  var COLOR_NAMES = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
+  var SHAPES_PLAIN = ['circle', 'square', 'triangle', 'star', 'heart', 'diamond', 'plus'];
+  var SHAPES_TURN = ['arrow', 'halfbox', 'triangle'];
+  var SHAPE_WORD = { circle: 'circle', square: 'square', triangle: 'triangle', star: 'star', heart: 'heart', diamond: 'diamond', plus: 'plus sign', arrow: 'arrow', halfbox: 'box' };
+  var NUM_WORD = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
+
+  function f2(n) { return Math.round(n * 10) / 10; }
+  function pts(list, cx, cy, r) {
+    var s = [], i;
+    for (i = 0; i < list.length; i += 2) s.push(f2(cx + list[i] * r) + ',' + f2(cy + list[i + 1] * r));
+    return s.join(' ');
+  }
+  function svgWrap(inner, px, inline) {
+    var style = inline ? 'display:inline-block;vertical-align:middle;' :
+      'position:absolute;left:50%;top:50%;margin-left:' + (-px / 2) + 'px;margin-top:' + (-px / 2) + 'px;';
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + px + '" height="' + px + '" viewBox="0 0 100 100" style="' + style + '">' + inner + '</svg>';
+  }
+  var HEART = [-0.15, 0.75, -1, 0.25, -1, -0.3, -1, -0.75, -0.55, -0.95, -0.3, -0.95, -0.12, -0.95, 0, -0.82, 0, -0.62,
+    0, -0.82, 0.12, -0.95, 0.3, -0.95, 0.55, -0.95, 1, -0.75, 1, -0.3, 1, 0.25, 0.15, 0.75, 0, 0.9];
+
+  function shapeSVG(shape, cx, cy, r, color, fill, rot) {
+    var c = COLORS[color] || color;
+    var solid = fill !== 'outline';
+    var sw = r > 25 ? 7 : 5;
+    var paint = solid ? 'fill="' + c + '" stroke="' + c + '" stroke-width="2" stroke-linejoin="round"' :
+      'fill="#ffffff" stroke="' + c + '" stroke-width="' + sw + '" stroke-linejoin="round"';
+    var tr = rot ? ' transform="rotate(' + rot + ' ' + f2(cx) + ' ' + f2(cy) + ')"' : '';
+    var k, p, i, a, d;
+    switch (shape) {
+      case 'circle':
+        return '<circle cx="' + f2(cx) + '" cy="' + f2(cy) + '" r="' + f2(r * 0.9) + '" ' + paint + '/>';
+      case 'square':
+        k = r * 0.8;
+        return '<rect x="' + f2(cx - k) + '" y="' + f2(cy - k) + '" width="' + f2(2 * k) + '" height="' + f2(2 * k) + '" ' + paint + tr + '/>';
+      case 'triangle':
+        return '<polygon points="' + pts([0, -0.92, 0.98, 0.72, -0.98, 0.72], cx, cy, r) + '" ' + paint + tr + '/>';
+      case 'diamond':
+        return '<polygon points="' + pts([0, -1, 0.72, 0, 0, 1, -0.72, 0], cx, cy, r) + '" ' + paint + tr + '/>';
+      case 'plus':
+        k = 0.32;
+        return '<polygon points="' + pts([-k, -0.95, k, -0.95, k, -k, 0.95, -k, 0.95, k, k, k, k, 0.95, -k, 0.95, -k, k, -0.95, k, -0.95, -k, -k, -k], cx, cy, r) + '" ' + paint + tr + '/>';
+      case 'star':
+        p = [];
+        for (i = 0; i < 10; i++) {
+          a = -Math.PI / 2 + i * Math.PI / 5;
+          k = (i % 2) ? 0.45 : 1;
+          p.push(Math.cos(a) * k, Math.sin(a) * k + 0.08);
+        }
+        return '<polygon points="' + pts(p, cx, cy, r) + '" ' + paint + tr + '/>';
+      case 'heart':
+        d = 'M' + f2(cx) + ' ' + f2(cy + 0.9 * r);
+        for (i = 0; i < HEART.length; i += 6) {
+          d += ' C' + f2(cx + HEART[i] * r) + ' ' + f2(cy + HEART[i + 1] * r) + ' ' + f2(cx + HEART[i + 2] * r) + ' ' +
+            f2(cy + HEART[i + 3] * r) + ' ' + f2(cx + HEART[i + 4] * r) + ' ' + f2(cy + HEART[i + 5] * r);
+        }
+        return '<path d="' + d + ' Z" ' + paint + tr + '/>';
+      case 'arrow':
+        return '<polygon points="' + pts([-0.95, -0.27, 0.12, -0.27, 0.12, -0.7, 0.95, 0, 0.12, 0.7, 0.12, 0.27, -0.95, 0.27], cx, cy, r) + '" ' + paint + tr + '/>';
+      case 'halfbox':
+        k = r * 0.8;
+        return '<g' + tr + '><rect x="' + f2(cx - k) + '" y="' + f2(cy) + '" width="' + f2(2 * k) + '" height="' + f2(k) + '" fill="' + c + '"/>' +
+          '<rect x="' + f2(cx - k) + '" y="' + f2(cy - k) + '" width="' + f2(2 * k) + '" height="' + f2(2 * k) + '" fill="none" stroke="#555" stroke-width="3"/></g>';
+    }
+    return '';
+  }
+
+  var POS = { 1: [[50, 50]], 2: [[28, 50], [72, 50]], 3: [[50, 28], [27, 71], [73, 71]] };
+  function figureSVG(fig, px, inline) {
+    var n = fig.count || 1, r = n > 1 ? 19 : (fig.size === 'small' ? 19 : 38), s = '', i, p = POS[n];
+    for (i = 0; i < p.length; i++) s += shapeSVG(fig.shape, p[i][0], p[i][1], r, fig.color, fig.fill, fig.rot || 0);
+    return svgWrap(s, px, inline);
+  }
+  function dotsSVG(n, px, inline) {
+    var rows = n <= 4 ? [n] : [Math.ceil(n / 2), Math.floor(n / 2)], ys = rows.length === 1 ? [50] : [31, 69], s = '', ri, k, m, x0;
+    for (ri = 0; ri < rows.length; ri++) {
+      m = rows[ri]; x0 = 50 - (m - 1) * 11;
+      for (k = 0; k < m; k++) s += '<circle cx="' + (x0 + k * 22) + '" cy="' + ys[ri] + '" r="9" fill="#2b3a67"/>';
+    }
+    return svgWrap(s, px, inline);
+  }
+  function arrowSVG(dir) {
+    var p = dir === 'left' ? '96,22 44,22 44,6 4,36 44,66 44,50 96,50' : '4,22 56,22 56,6 96,36 56,66 56,50 4,50';
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="110" height="72" viewBox="0 0 100 72" style="position:absolute;left:10px;top:6px">' +
+      '<polygon points="' + p + '" fill="#a3a3a3" stroke="#8f8f8f" stroke-width="3" stroke-linejoin="round"/></svg>';
+  }
+  function starSVG(px, inline) {
+    var p = [], i, a, k;
+    for (i = 0; i < 10; i++) { a = -Math.PI / 2 + i * Math.PI / 5; k = (i % 2) ? 0.44 : 0.96; p.push(Math.cos(a) * k, Math.sin(a) * k + 0.06); }
+    return svgWrap('<polygon points="' + pts(p, 50, 50, 48) + '" fill="#ffca28" stroke="#f08c00" stroke-width="4" stroke-linejoin="round"/>', px, inline);
+  }
+  function speakerSVG() {
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="40" viewBox="0 0 44 40" style="position:absolute;left:14px;top:4px">' +
+      '<polygon points="4,14 12,14 22,5 22,35 12,26 4,26" fill="#6b7280"/>' +
+      '<path d="M28 13 Q33 20 28 27" fill="none" stroke="#6b7280" stroke-width="3" stroke-linecap="round"/>' +
+      '<path d="M32 8 Q41 20 32 32" fill="none" stroke="#6b7280" stroke-width="3" stroke-linecap="round"/></svg>';
+  }
+  function stopSVG(px) {
+    var p = [], i, a;
+    for (i = 0; i < 8; i++) { a = Math.PI / 8 + i * Math.PI / 4; p.push(Math.cos(a), Math.sin(a)); }
+    return svgWrap('<polygon points="' + pts(p, 50, 50, 48) + '" fill="#d32f2f" stroke="#fff" stroke-width="3"/>' +
+      '<polygon points="' + pts(p, 50, 50, 42) + '" fill="none" stroke="#fff" stroke-width="2"/>' +
+      '<text x="50" y="59" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="bold" font-size="25" fill="#fff">STOP</text>', px);
+  }
+
+  /* ---------------- Verbal: picture classification (which one does not belong) ---------------- */
+  var FAR_FOOD = [['🍎', 'apple'], ['🍌', 'banana'], ['🍕', 'pizza'], ['🍦', 'ice cream'], ['🍓', 'strawberry']];
+  var FAR_ANIMAL = [['🐕', 'dog'], ['🐘', 'elephant'], ['🐟', 'fish'], ['🐄', 'cow'], ['🐢', 'turtle']];
+  var FAR_VEHICLE = [['🚗', 'car'], ['🚌', 'bus'], ['🚲', 'bicycle'], ['🚂', 'train']];
+  var FAR_THING = [['🎸', 'guitar'], ['👟', 'shoe'], ['⚽', 'ball'], ['🔑', 'key'], ['🎩', 'hat'],
+    ['🔨', 'hammer'], ['⏰', 'clock'], ['🏠', 'house'], ['📕', 'book']];
+  function cat() { var out = [], i; for (i = 0; i < arguments.length; i++) out = out.concat(arguments[i]); return out; }
+
+  var VCATS = [
+    { id: 'fruit', m: [['🍎', 'apple'], ['🍌', 'banana'], ['🍊', 'orange'], ['🍐', 'pear'], ['🍑', 'peach'],
+      ['🍒', 'cherries'], ['🍇', 'grapes'], ['🍉', 'watermelon'], ['🍓', 'strawberry'], ['🍋', 'lemon'], ['🍍', 'pineapple']],
+      v: [{ d: 1, label: 'fruit', x: cat(FAR_VEHICLE, FAR_THING, FAR_ANIMAL) },
+        { d: 2, label: 'fruit', x: [['🍕', 'pizza'], ['🍔', 'hamburger'], ['🍞', 'bread'], ['🌽', 'corn'], ['🍩', 'donut'], ['🍪', 'cookie'], ['🎂', 'cake']] }] },
+    { id: 'treats', m: [['🎂', 'cake'], ['🍩', 'donut'], ['🍪', 'cookie'], ['🍦', 'ice cream'], ['🍭', 'lollipop'], ['🍫', 'chocolate'], ['🍬', 'candy']],
+      v: [{ d: 1, label: 'things to eat', x: cat(FAR_VEHICLE, FAR_THING, FAR_ANIMAL) },
+        { d: 3, label: 'sweet treats', x: [['🍕', 'pizza'], ['🍔', 'hamburger'], ['🌽', 'corn'], ['🍞', 'bread'], ['🍟', 'french fries'], ['🍳', 'egg']] }] },
+    { id: 'land', m: [['🐄', 'cow'], ['🐖', 'pig'], ['🐑', 'sheep'], ['🐎', 'horse'], ['🐕', 'dog'], ['🐈', 'cat'],
+      ['🐇', 'rabbit'], ['🐘', 'elephant'], ['🐒', 'monkey'], ['🐫', 'camel'], ['🐁', 'mouse']],
+      v: [{ d: 1, label: 'animals', x: cat(FAR_VEHICLE, FAR_THING, FAR_FOOD) },
+        { d: 2, label: 'animals that live on land', x: [['🐟', 'fish'], ['🐳', 'whale'], ['🐙', 'octopus'], ['🐬', 'dolphin'], ['🐠', 'fish']] }] },
+    { id: 'water', m: [['🐟', 'fish'], ['🐠', 'fish'], ['🐡', 'puffer fish'], ['🐳', 'whale'], ['🐬', 'dolphin'], ['🐙', 'octopus']],
+      v: [{ d: 1, label: 'animals that live in the water', x: cat(FAR_VEHICLE, FAR_THING, FAR_FOOD) },
+        { d: 2, label: 'animals that live in the water', x: [['🐄', 'cow'], ['🐎', 'horse'], ['🐘', 'elephant'], ['🐒', 'monkey'], ['🐇', 'rabbit'], ['🐕', 'dog'], ['🐈', 'cat']] }] },
+    { id: 'bugs', m: [['🐛', 'caterpillar'], ['🐝', 'bee'], ['🐞', 'ladybug'], ['🐜', 'ant'], ['🐌', 'snail']],
+      v: [{ d: 2, label: 'bugs', x: cat(FAR_VEHICLE, FAR_THING, FAR_FOOD) },
+        { d: 3, label: 'bugs', x: [['🐦', 'bird'], ['🐁', 'mouse'], ['🐟', 'fish'], ['🐸', 'frog'], ['🐢', 'turtle']] }] },
+    { id: 'flowers', m: [['🌸', 'flower'], ['🌻', 'sunflower'], ['🌹', 'rose'], ['🌷', 'tulip'], ['🌺', 'flower'], ['🌼', 'flower']],
+      v: [{ d: 1, label: 'flowers', x: cat(FAR_VEHICLE, FAR_THING, FAR_ANIMAL) },
+        { d: 2, label: 'flowers', x: [['🌲', 'tree'], ['🍄', 'mushroom'], ['🌵', 'cactus'], ['🍁', 'leaf'], ['🌴', 'palm tree'], ['🌳', 'tree']] }] },
+    { id: 'wheels', m: [['🚗', 'car'], ['🚕', 'taxi'], ['🚌', 'bus'], ['🚓', 'police car'], ['🚑', 'ambulance'],
+      ['🚒', 'fire truck'], ['🚲', 'bicycle'], ['🚜', 'tractor'], ['🚚', 'truck']],
+      v: [{ d: 1, label: 'things with wheels', x: cat(FAR_FOOD, FAR_ANIMAL, FAR_THING) },
+        { d: 3, label: 'things with wheels', x: [['⛵', 'sailboat'], ['🚢', 'ship'], ['🚀', 'rocket']] }] },
+    { id: 'fly', m: [['🐦', 'bird'], ['🐝', 'bee'], ['🚁', 'helicopter'], ['🚀', 'rocket'], ['🎈', 'balloon'], ['✈️', 'airplane']],
+      v: [{ d: 3, label: 'things that fly', x: [['🚗', 'car'], ['🐢', 'turtle'], ['🐘', 'elephant'], ['🚂', 'train'], ['🐟', 'fish'], ['🚲', 'bicycle']] }] },
+    { id: 'clothes', m: [['👕', 'shirt'], ['👖', 'pants'], ['👗', 'dress'], ['👒', 'hat'], ['👢', 'boot'], ['👟', 'sneaker'], ['👔', 'shirt']],
+      v: [{ d: 1, label: 'clothes', x: cat(FAR_FOOD, FAR_ANIMAL, FAR_VEHICLE) }] },
+    { id: 'feet', m: [['👟', 'sneaker'], ['👠', 'high heel'], ['👢', 'boot'], ['👞', 'shoe'], ['👡', 'sandal']],
+      v: [{ d: 1, label: 'shoes', x: cat(FAR_FOOD, FAR_ANIMAL) },
+        { d: 2, label: 'things you wear on your feet', x: [['👒', 'hat'], ['🎩', 'hat'], ['👕', 'shirt'], ['👖', 'pants'], ['👗', 'dress']] }] },
+    { id: 'music', m: [['🎸', 'guitar'], ['🎹', 'piano'], ['🎺', 'trumpet'], ['🎻', 'violin'], ['🎷', 'saxophone']],
+      v: [{ d: 1, label: 'things that make music', x: cat(FAR_FOOD, FAR_ANIMAL, FAR_VEHICLE) }] },
+    { id: 'balls', m: [['⚽', 'soccer ball'], ['🏀', 'basketball'], ['🏈', 'football'], ['⚾', 'baseball'], ['🎾', 'tennis ball'], ['🎱', 'pool ball']],
+      v: [{ d: 1, label: 'balls', x: cat(FAR_ANIMAL, FAR_VEHICLE) },
+        { d: 3, label: 'balls', x: [['🍊', 'orange'], ['🎈', 'balloon'], ['🍪', 'cookie'], ['🍩', 'donut']] }] },
+    { id: 'body', m: [['👀', 'eyes'], ['👂', 'ear'], ['👃', 'nose'], ['👄', 'mouth'], ['👅', 'tongue']],
+      v: [{ d: 1, label: 'parts of your body', x: cat(FAR_FOOD, FAR_VEHICLE, FAR_THING) },
+        { d: 2, label: 'parts of your body', x: [['👕', 'shirt'], ['👓', 'glasses'], ['🎩', 'hat']] }] }
+  ];
+
+  function vGenerate(diff, ctx) {
+    var choices = [], i, j, d;
+    for (d = diff; d >= 1 && !choices.length; d--) {
+      for (i = 0; i < VCATS.length; i++) {
+        if (indexOf(ctx.recent, VCATS[i].id) >= 0) continue;
+        for (j = 0; j < VCATS[i].v.length; j++) if (VCATS[i].v[j].d === d) choices.push([VCATS[i], VCATS[i].v[j]]);
+      }
+    }
+    if (!choices.length) { ctx.recent = []; return vGenerate(diff, ctx); }
+    var c = pick(choices), catg = c[0], v = c[1];
+    var members = shuffle(catg.m).slice(0, 5), emojis = [], odd;
+    for (i = 0; i < members.length; i++) emojis.push(members[i][0]);
+    do { odd = pick(v.x); } while (indexOf(emojis, odd[0]) >= 0);
+    var all = members.concat([odd]), order = shuffle([0, 1, 2, 3, 4, 5]), pics = [], answer = -1;
+    for (i = 0; i < 6; i++) {
+      pics.push({ e: all[order[i]][0], n: all[order[i]][1] });
+      if (order[i] === 5) answer = i;
+    }
+    ctx.recent.push(catg.id);
+    if (ctx.recent.length > 3) ctx.recent.shift();
+    return { kind: 'verbal', diff: diff, pics: pics, answer: answer, label: v.label, odd: odd[1], key: catg.id + odd[0] };
+  }
+  function vExplain(it) { return 'The ' + it.odd + ' does not belong. The others are all ' + it.label + '.'; }
+
+  /* ---------------- Nonverbal: figure matrices (2 x 2 with a missing box) ---------------- */
+  function copyFig(f) { return { shape: f.shape, color: f.color, size: f.size, fill: f.fill, count: f.count, rot: f.rot || 0 }; }
+  function figKey(f) {
+    var turn = indexOf(SHAPES_TURN, f.shape) >= 0;
+    return [f.shape, f.color, f.count > 1 ? 'big' : f.size, f.shape === 'halfbox' ? 'solid' : f.fill, f.count, turn ? ((f.rot % 360) + 360) % 360 : 0].join('|');
+  }
+  var NV_PLAN = {
+    1: { col: ['color', 'size', 'fill', 'shape'], row: ['shape', 'color'] },
+    2: { col: ['count', 'fill', 'size', 'shape', 'color', 'rot180'], row: ['shape', 'color', 'size'] },
+    3: { col: ['rot90', 'count', 'colorsize', 'rot180', 'shapefill'], row: ['color', 'shape', 'fill'] }
+  };
+
+  function nvTry(diff) {
+    var plan = NV_PLAN[diff], colCode = pick(plan.col), rowAttr = pick(plan.row), col;
+    if (colCode === 'colorsize') col = ['color', 'size'];
+    else if (colCode === 'shapefill') col = ['shape', 'fill'];
+    else if (colCode === 'rot90' || colCode === 'rot180') col = ['rot'];
+    else col = [colCode];
+    var rotDelta = colCode === 'rot90' ? pick([90, 270]) : 180;
+    if (indexOf(col, rowAttr) >= 0) return null;
+    var all = col.concat([rowAttr]);
+    var has = function (a) { return indexOf(all, a) >= 0; };
+    if (has('size') && has('count')) return null;
+    var turn = has('rot');
+    var pool = turn ? SHAPES_TURN.slice() : SHAPES_PLAIN.slice();
+    if (has('fill')) pool = without(pool, ['halfbox']);
+
+    var A = { shape: pick(pool), color: pick(COLOR_NAMES), size: 'big', fill: 'solid', count: 1, rot: turn ? pick([0, 90, 180, 270]) : 0 };
+    if (has('size')) A.size = pick(['big', 'small']);
+    if (has('fill')) A.fill = Math.random() < 0.7 ? 'solid' : 'outline';
+    if (has('count')) A.count = pick([1, 2]);
+
+    var B = copyFig(A), i, a;
+    for (i = 0; i < col.length; i++) {
+      a = col[i];
+      if (a === 'color') B.color = pickOther(COLOR_NAMES, [A.color]);
+      else if (a === 'shape') B.shape = pickOther(pool, [A.shape]);
+      else if (a === 'size') B.size = A.size === 'big' ? 'small' : 'big';
+      else if (a === 'fill') B.fill = A.fill === 'solid' ? 'outline' : 'solid';
+      else if (a === 'count') B.count = pickOther([1, 2, 3], [A.count]);
+      else if (a === 'rot') B.rot = (A.rot + rotDelta) % 360;
+    }
+    var C = copyFig(A);
+    if (rowAttr === 'color') C.color = pickOther(COLOR_NAMES, [A.color, B.color]);
+    else if (rowAttr === 'shape') C.shape = pickOther(pool, [A.shape, B.shape]);
+    else if (rowAttr === 'size') C.size = A.size === 'big' ? 'small' : 'big';
+    else if (rowAttr === 'fill') C.fill = A.fill === 'solid' ? 'outline' : 'solid';
+
+    var D = copyFig(C);
+    for (i = 0; i < col.length; i++) {
+      a = col[i];
+      if (a === 'rot') D.rot = (C.rot + rotDelta) % 360;
+      else D[a] = B[a];
+    }
+    if (figKey(A) === figKey(B) || figKey(A) === figKey(C) || figKey(C) === figKey(D) || figKey(B) === figKey(D)) return null;
+
+    // wrong answers that a child might choose
+    var cands = [copyFig(C), copyFig(B)], x;
+    for (i = 0; i < col.length; i++) {
+      a = col[i]; x = copyFig(D);
+      if (a === 'color') { x.color = pickOther(COLOR_NAMES, [D.color, C.color]); cands.push(x); }
+      else if (a === 'shape') { x.shape = pickOther(pool, [D.shape, C.shape]); cands.push(x); }
+      else if (a === 'count') { x.count = pickOther([1, 2, 3], [D.count, C.count]); cands.push(x); }
+      else if (a === 'rot') {
+        x.rot = (C.rot + (rotDelta === 180 ? 90 : 180)) % 360; cands.push(x);
+        x = copyFig(D); x.rot = (C.rot + 360 - (rotDelta === 180 ? 90 : rotDelta)) % 360; cands.push(x);
+      }
+    }
+    if (col.length > 1) {
+      for (i = 0; i < col.length; i++) { x = copyFig(C); x[col[i]] = B[col[i]]; cands.push(x); }
+    }
+    x = copyFig(D);
+    if (rowAttr === 'color') { x.color = pickOther(COLOR_NAMES, [D.color, A.color, C.color]); cands.push(x); }
+    else if (rowAttr === 'shape') { x.shape = pickOther(pool, [D.shape, A.shape, C.shape]); cands.push(x); }
+    var guard = 0;
+    while (cands.length < 14 && guard++ < 40) {
+      x = copyFig(D);
+      var opts = ['color', 'shape'];
+      if (D.shape !== 'halfbox') opts.push('fill');
+      if (!has('size')) opts.push('count');
+      if (!has('count') && D.count === 1) opts.push('size');
+      if (turn) opts.push('rot');
+      a = pick(opts);
+      if (a === 'color') x.color = pickOther(COLOR_NAMES, [D.color]);
+      else if (a === 'shape') x.shape = pickOther(pool, [D.shape]);
+      else if (a === 'fill') x.fill = D.fill === 'solid' ? 'outline' : 'solid';
+      else if (a === 'count') x.count = pickOther([1, 2, 3], [D.count]);
+      else if (a === 'size') x.size = D.size === 'big' ? 'small' : 'big';
+      else if (a === 'rot') x.rot = (D.rot + pick([90, 180, 270])) % 360;
+      cands.push(x);
+    }
+    var seen = {}, wrong = [], k;
+    seen[figKey(D)] = 1;
+    for (i = 0; i < cands.length && wrong.length < 4; i++) {
+      k = figKey(cands[i]);
+      if (!seen[k]) { seen[k] = 1; wrong.push(cands[i]); }
+    }
+    if (wrong.length < 4) return null;
+    var options = shuffle(wrong.concat([D])), answer = -1;
+    for (i = 0; i < 5; i++) if (figKey(options[i]) === figKey(D)) answer = i;
+    return { kind: 'nonverbal', diff: diff, grid: [A, B, C], options: options, answer: answer, col: col, rotDelta: rotDelta,
+      key: figKey(A) + figKey(B) + figKey(C) };
+  }
+  function nvGenerate(diff) {
+    var it = null, tries = 0;
+    while (!it && tries++ < 200) it = nvTry(diff);
+    while (!it) it = nvTry(1);
+    return it;
+  }
+  function nvExplain(it) {
+    var A = it.grid[0], B = it.grid[1], parts = [], i, a;
+    for (i = 0; i < it.col.length; i++) {
+      a = it.col[i];
+      if (a === 'color') parts.push('the color changes from ' + A.color + ' to ' + B.color);
+      else if (a === 'shape') parts.push('the ' + SHAPE_WORD[A.shape] + ' turns into a ' + SHAPE_WORD[B.shape]);
+      else if (a === 'size') parts.push(B.size === 'small' ? 'it gets smaller' : 'it gets bigger');
+      else if (a === 'fill') parts.push(B.fill === 'outline' ? 'it becomes empty inside' : 'it gets colored in');
+      else if (a === 'count') parts.push(NUM_WORD[A.count] + ' becomes ' + NUM_WORD[B.count]);
+      else if (a === 'rot') parts.push(it.rotDelta === 180 ? 'it turns all the way around' : 'it turns');
+    }
+    return 'Look at the top row. ' + cap(parts.join(', and ')) + '. So the bottom picture changes the same way.';
+  }
+
+  /* ---------------- Quantitative: number series / patterns ---------------- */
+  var Q_TYPES = {
+    1: ['up1', 'up1', 'dotsUp', 'abShapes'],
+    2: ['down1', 'abNum', 'abcShapes', 'dotsDown', 'up1big'],
+    3: ['up2', 'aabb', 'down2', 'abcNum', 'abcShapes']
+  };
+  function plainFig(shape, color) { return { shape: shape, color: color, size: 'big', fill: 'solid', count: 1, rot: 0 }; }
+  function figWord(f) { return f.color + ' ' + SHAPE_WORD[f.shape]; }
+  function numDistractors(ans, seq, lo, hi) {
+    var c = shuffle([ans + 1, ans - 1, ans + 2, ans - 2]).concat([seq[seq.length - 1], seq[0], ans + 3, ans - 3, ans + 4, ans + 5, ans + 6]);
+    var out = [], seen = {}, i, v;
+    seen[ans] = 1;
+    for (i = 0; i < c.length && out.length < 4; i++) {
+      v = c[i];
+      if (v >= lo && v <= hi && !seen[v]) { seen[v] = 1; out.push(v); }
+    }
+    for (v = lo; out.length < 4 && v <= hi + 10; v++) { if (!seen[v]) { seen[v] = 1; out.push(v); } }
+    return out;
+  }
+  function qGenerate(diff) {
+    var type = pick(Q_TYPES[diff]), seq, ans, mode = 'num', ex, a, b, c, s, wrong, X, Y, Z, sh, co;
+    switch (type) {
+      case 'up1': s = rint(1, 6); seq = [s, s + 1, s + 2, s + 3]; ans = s + 4; ex = 'The numbers go up by one'; break;
+      case 'up1big': s = rint(7, 14); seq = [s, s + 1, s + 2, s + 3]; ans = s + 4; ex = 'The numbers go up by one'; break;
+      case 'down1': s = rint(6, 10); seq = [s, s - 1, s - 2, s - 3]; ans = s - 4; ex = 'The numbers go down by one'; break;
+      case 'up2': s = rint(1, 4); seq = [s, s + 2, s + 4, s + 6]; ans = s + 8; ex = 'The numbers go up by two'; break;
+      case 'down2': s = rint(9, 12); seq = [s, s - 2, s - 4, s - 6]; ans = s - 8; ex = 'The numbers go down by two'; break;
+      case 'abNum': a = rint(1, 9); b = pickOther([1, 2, 3, 4, 5, 6, 7, 8, 9], [a]); seq = [a, b, a, b]; ans = a; ex = 'The numbers take turns'; break;
+      case 'aabb': s = rint(1, 6); seq = [s, s, s + 1, s + 1]; ans = s + 2; ex = 'Each number comes two times, and the numbers go up'; break;
+      case 'abcNum':
+        a = rint(1, 9); b = pickOther([1, 2, 3, 4, 5, 6, 7, 8, 9], [a]); c = pickOther([1, 2, 3, 4, 5, 6, 7, 8, 9], [a, b]);
+        seq = [a, b, c, a]; ans = b; ex = 'The pattern is ' + a + ', ' + b + ', ' + c + ', and then it starts again'; break;
+      case 'dotsUp': mode = 'dots'; s = rint(1, 3); seq = [s, s + 1, s + 2, s + 3]; ans = s + 4; ex = 'Each box has one more dot'; break;
+      case 'dotsDown': mode = 'dots'; s = rint(5, 7); seq = [s, s - 1, s - 2, s - 3]; ans = s - 4; ex = 'Each box has one less dot'; break;
+      case 'abShapes':
+      case 'abcShapes':
+        mode = 'shapes';
+        sh = shuffle(SHAPES_PLAIN); co = shuffle(COLOR_NAMES);
+        X = plainFig(sh[0], co[0]); Y = plainFig(sh[1], co[1]); Z = plainFig(sh[2], co[2]);
+        if (type === 'abShapes') {
+          seq = [X, Y, X, Y]; ans = X; ex = 'The pictures take turns';
+          wrong = [Y, plainFig(X.shape, Y.color), plainFig(Y.shape, X.color), plainFig(sh[3], co[3])];
+        } else {
+          seq = [X, Y, Z, X]; ans = Y; ex = 'The pattern is ' + figWord(X) + ', ' + figWord(Y) + ', ' + figWord(Z) + ', and then it starts again';
+          wrong = shuffle([X, Z, plainFig(Y.shape, X.color), plainFig(X.shape, Y.color), plainFig(sh[3], co[3])]).slice(0, 4);
+        }
+        break;
+    }
+    if (mode === 'num') wrong = numDistractors(ans, seq, 0, 20);
+    if (mode === 'dots') wrong = numDistractors(ans, seq, 1, 8);
+    var options = shuffle(wrong.concat([ans])), answer = indexOf(options, ans);
+    var words = [], all = seq.concat([ans]), i;
+    for (i = 0; i < all.length; i++) words.push(mode === 'shapes' ? figWord(all[i]) : String(all[i]));
+    var tail = mode === 'shapes' ? 'the ' + figWord(ans) : (mode === 'dots' ? ans + (ans === 1 ? ' dot' : ' dots') : String(ans));
+    var keyParts = [];
+    for (i = 0; i < seq.length; i++) keyParts.push(mode === 'shapes' ? figKey(seq[i]) : seq[i]);
+    return { kind: 'quant', diff: diff, mode: mode, seq: seq, options: options, answer: answer,
+      explain: ex + ': ' + words.join(', ') + '. So ' + tail + ' comes next.', key: type + keyParts.join(',') };
+  }
+
+  /* ---------------- items ---------------- */
+  function diffFor(i, n) { var f = i / n; return f < 0.34 ? 1 : (f < 0.67 ? 2 : 3); }
+  function genItem(kind, diff, ctx) {
+    var it, tries = 0;
+    do {
+      it = kind === 'verbal' ? vGenerate(diff, ctx) : (kind === 'nonverbal' ? nvGenerate(diff) : qGenerate(diff));
+    } while (ctx.keys[it.key] && tries++ < 40);
+    ctx.keys[it.key] = 1;
+    return it;
+  }
+  function genItems(kind, n, ctx) {
+    var out = [], i;
+    for (i = 0; i < n; i++) out.push(genItem(kind, diffFor(i, n), ctx));
+    return out;
+  }
+  function explain(it) {
+    if (it.kind === 'verbal') return vExplain(it);
+    if (it.kind === 'nonverbal') return nvExplain(it);
+    return it.explain;
+  }
+  var KIND = {
+    verbal: { name: 'Verbal', color: '#3157d5' },
+    nonverbal: { name: 'Nonverbal', color: '#9c4a9f' },
+    quant: { name: 'Quantitative', color: '#43a047' }
+  };
+  var DIRECTIONS = {
+    verbal: 'Look at the six pictures. Five of the pictures go together in some way. One picture does not belong. Touch the picture that does not belong. Then touch the arrow.',
+    nonverbal: 'Look at the top two pictures. They go together in a certain way. Now look at the picture on the bottom. Find the answer that goes with it in the same way, so it fits in the box with the question mark. Touch your answer. Then touch the arrow.',
+    quant: 'Look at the row at the top. The numbers or pictures make a pattern. Find the answer that comes next in the pattern. Touch your answer. Then touch the arrow.'
+  };
+  function shortPrompt(it) {
+    if (it.kind === 'verbal') return 'Which picture does not belong?';
+    if (it.kind === 'nonverbal') return 'Which picture goes in the box with the question mark?';
+    return it.mode === 'num' ? 'Which number comes next?' : 'Which picture comes next?';
+  }
+
+  /* ---------------- shared screen parts ---------------- */
+  function topBar(o) {
+    var bar = el('div', 'topbar', box(0, 0, W, 60));
+    if (o.onExit) {
+      var hb = el('div', 'hold', box(12, 8, 170, 44), '<div class="fill"></div><span style="line-height:44px;font-size:17px">Hold to exit</span>');
+      onHold(hb, 1200, o.onExit);
+      bar.appendChild(hb);
+    }
+    if (o.onBack) {
+      var bb = el('div', 'btn light', box(12, 8, 150, 44) + 'line-height:40px;font-size:19px;border-radius:12px', o.backLabel || '‹ Back');
+      onTap(bb, o.onBack);
+      bar.appendChild(bb);
+    }
+    if (o.title) bar.appendChild(el('div', 'bartitle', box(200, 0, 600, 60), o.title));
+    if (o.right) bar.appendChild(el('div', 'bartitle', box(560, 0, 425, 60) + 'text-align:right;font-size:17px', o.right));
+    if (o.onSpeak && settings.speak) {
+      var sp = el('div', 'btn light', box(W - 88, 8, 74, 44) + 'border-radius:12px', speakerSVG());
+      onTap(sp, o.onSpeak);
+      bar.appendChild(sp);
+    }
+    stage.appendChild(bar);
+    return bar;
+  }
+  function panel(color) {
+    var p = el('div', 'panel', box(30, 76, 940, 662) + 'border-color:' + color);
+    stage.appendChild(p);
+    return p;
+  }
+  // panel inner area is 928 x 650
+  function arrowBtn(p, dir) {
+    var a = el('div', 'arrow', box(dir === 'left' ? 16 : 928 - 16 - 130, 650 - 14 - 84, 130, 84), arrowSVG(dir));
+    p.appendChild(a);
+    return a;
+  }
+  function tile(p, x, y, w, h, inner, extraCss) {
+    var t = el('div', 'tile', box(x, y, w, h) + (extraCss || ''), inner);
+    p.appendChild(t);
+    return t;
+  }
+
+  function renderVerbal(it, p) {
+    var tiles = [], tw = 230, th = 172, gx = 40, gy = 62, x0 = Math.round((928 - (3 * tw + 2 * gx)) / 2), y0 = 34, i, x, y;
+    for (i = 0; i < 6; i++) {
+      x = x0 + (i % 3) * (tw + gx); y = y0 + Math.floor(i / 3) * (th + gy);
+      var t = tile(p, x, y, tw, th, it.pics[i].e, 'font-size:110px;line-height:' + (th - 4) + 'px;');
+      addClass(t, 'emoji');
+      tiles.push(t);
+      p.appendChild(el('div', 'lbl', box(x + 2, y + th + 4, 40, 28), String(i + 1)));
+    }
+    return tiles;
+  }
+  function renderNonverbal(it, p) {
+    var tiles = [], cs = 132, g = 14, mx = Math.round((928 - (2 * cs + g)) / 2), my = 24, i, x, y;
+    for (i = 0; i < 4; i++) {
+      x = mx + (i % 2) * (cs + g); y = my + Math.floor(i / 2) * (cs + g);
+      p.appendChild(el('div', 'cell', box(x, y, cs, cs),
+        i < 3 ? figureSVG(it.grid[i], 116) : '<span class="qq" style="line-height:' + (cs - 4) + 'px">?</span>'));
+    }
+    var tw = 132, gx = 38, x0 = Math.round((928 - (5 * tw + 4 * gx)) / 2), y0 = 360;
+    for (i = 0; i < 5; i++) {
+      x = x0 + i * (tw + gx);
+      tiles.push(tile(p, x, y0, tw, tw, figureSVG(it.options[i], 116)));
+      p.appendChild(el('div', 'lbl c', box(x, y0 + tw + 4, tw, 28), String(i + 1)));
+    }
+    return tiles;
+  }
+  function quantContent(it, v, px, h) {
+    if (it.mode === 'num') return '<span class="qn" style="line-height:' + h + 'px">' + v + '</span>';
+    if (it.mode === 'dots') return dotsSVG(v, px);
+    return figureSVG(v, px);
+  }
+  function renderQuant(it, p) {
+    var tiles = [], cw = 118, ch = 108, bw = cw * 5, bx = Math.round((928 - bw - 4) / 2), by = 40, i, x;
+    var bar = el('div', 'qbar', box(bx, by, bw + 4, ch + 4));
+    for (i = 0; i < 5; i++) {
+      bar.appendChild(el('div', '', box(i * cw, 0, cw, ch) + (i ? 'border-left:2px solid #c8c8c8;' : ''),
+        i < 4 ? quantContent(it, it.seq[i], 84, ch) : '<span class="qq" style="line-height:' + ch + 'px">?</span>'));
+    }
+    p.appendChild(bar);
+    var tw = 128, th = 118, gx = 40, x0 = Math.round((928 - (5 * tw + 4 * gx)) / 2), y0 = 250;
+    for (i = 0; i < 5; i++) {
+      x = x0 + i * (tw + gx);
+      tiles.push(tile(p, x, y0, tw, th, quantContent(it, it.options[i], 92, th - 4)));
+      p.appendChild(el('div', 'lbl c', box(x, y0 + th + 4, tw, 28), 'ABCDE'.charAt(i)));
+    }
+    return tiles;
+  }
+  function renderItem(it, p) {
+    if (it.kind === 'verbal') return renderVerbal(it, p);
+    if (it.kind === 'nonverbal') return renderNonverbal(it, p);
+    return renderQuant(it, p);
+  }
+  function markSelected(tiles, k) { for (var j = 0; j < tiles.length; j++) setClass(tiles[j], 'sel', j === k); }
+  function wireTiles(tiles, onPick) {
+    var j;
+    for (j = 0; j < tiles.length; j++) {
+      (function (k) { onTap(tiles[k], function () { markSelected(tiles, k); onPick(k); }); })(j);
+    }
+  }
+
+  /* ---------------- home ---------------- */
+  function showHome() {
+    hush(); clear();
+    stage.appendChild(el('div', 'title', box(0, 26, W, 66), 'Puzzle Practice'));
+    stage.appendChild(el('div', 'subtitle', box(0, 92, W, 30), 'Verbal · Nonverbal · Quantitative'));
+
+    var wu = el('div', 'warm btn', box(150, 146, 700, 116) + 'background:#ffd54f;color:#5d4300;border-radius:22px',
+      '<div style="position:absolute;left:0;right:0;top:16px;font-size:38px;font-weight:bold">' + starSVG(52, true) + ' Touch Practice</div>' +
+      '<div style="position:absolute;left:0;right:0;top:74px;font-size:19px">Tapping, changing an answer, and the arrows</div>');
+    onTap(wu, startWarmup);
+    stage.appendChild(wu);
+
+    var kinds = ['verbal', 'nonverbal', 'quant'];
+    var icons = [
+      '<span class="emoji" style="font-size:54px;line-height:70px">🍌🐕🍎</span>',
+      figureSVG(plainFig('circle', 'yellow'), 64, true) + figureSVG(plainFig('triangle', 'blue'), 64, true) + figureSVG({ shape: 'square', color: 'green', size: 'big', fill: 'outline', count: 1, rot: 0 }, 64, true),
+      '<span style="font-size:46px;font-weight:bold;line-height:70px;font-family:Arial,Helvetica,sans-serif">6 7 8 ?</span>'
+    ];
+    var subs = ['Pictures', 'Shapes', 'Numbers'];
+    var i;
+    for (i = 0; i < 3; i++) {
+      (function (k) {
+        var c = el('div', 'card', box(110 + k * 270, 288, 240, 226) + 'background:' + KIND[kinds[k]].color,
+          '<div style="position:absolute;left:0;right:0;top:30px;height:72px">' + icons[k] + '</div>' +
+          '<div class="cname" style="position:absolute;left:0;right:0;top:120px">' + KIND[kinds[k]].name + '</div>' +
+          '<div class="csub" style="position:absolute;left:0;right:0;top:166px">' + subs[k] + '</div>');
+        onTap(c, function () { startSession([kinds[k]]); });
+        stage.appendChild(c);
+      })(i);
+    }
+    var all = el('div', 'allbtn btn', box(110, 540, 780, 88) + 'background:#37474f;font-size:32px;font-weight:bold;line-height:88px', 'All three parts');
+    onTap(all, function () { startSession(['verbal', 'nonverbal', 'quant']); });
+    stage.appendChild(all);
+
+    var g = el('div', 'hold', box(W - 262, 670, 240, 56), '<div class="fill"></div><span style="line-height:56px;font-size:19px">Grown-ups (hold)</span>');
+    onHold(g, 1000, showGrownups);
+    stage.appendChild(g);
+    if (window.navigator.standalone === false) {
+      stage.appendChild(el('div', 'tip', box(24, 668, 680, 60), 'Tip: tap the Share button, then “Add to Home Screen” to open this full screen like an app.'));
+    }
+  }
+
+  /* ---------------- touch practice (warm-up) ---------------- */
+  var STARS = [[500, 400, 240], [240, 260, 140], [770, 560, 140], [300, 600, 120], [740, 250, 120]];
+  function startWarmup() { warmStep(0); }
+  function warmStep(step) {
+    clear();
+    var instr = '', lastSay = 0, k, p, l, r, tiles;
+    function speak(s) { instr = s; lastSay = now(); say(s); }
+    function repeat() { var t = now(); if (t - lastSay > 2500) { lastSay = t; say(instr); } }
+    var bg = el('div', '', box(0, 0, W, H));
+    onTap(bg, repeat);
+    stage.appendChild(bg);
+    topBar({ title: 'Touch Practice', onBack: showHome, backLabel: '‹ Home', onSpeak: function () { say(instr); } });
+
+    if (step < STARS.length) {
+      var s = STARS[step];
+      var st = el('div', '', box(s[0] - s[2] / 2, s[1] - s[2] / 2, s[2], s[2]), starSVG(s[2]));
+      onTap(st, function () { warmStep(step + 1); });
+      stage.appendChild(st);
+      speak(step === 0 ? 'Let’s practice using the screen. Touch the big star with one finger.' :
+        (step === 1 ? 'Now touch the star.' : pick(['Touch the star.', 'Find the star and touch it.', 'Touch the star again.'])));
+      return;
+    }
+    k = step - STARS.length;
+    if (k === 0) {
+      p = panel('#3157d5');
+      onTap(p, repeat);
+      l = arrowBtn(p, 'left'); addClass(l, 'off');
+      r = arrowBtn(p, 'right'); addClass(r, 'pulse');
+      onTap(r, function () { warmStep(step + 1); });
+      onTap(l, repeat);
+      speak('This gray arrow takes you to the next page. Touch the arrow.');
+    } else if (k === 1) {
+      p = panel('#3157d5');
+      onTap(p, repeat);
+      var pics = ['🐕', '🐈', '🐇'], phase = 0, i;
+      tiles = [];
+      for (i = 0; i < 3; i++) {
+        var t = tile(p, 89 + i * 270, 110, 210, 190, pics[i], 'font-size:120px;line-height:186px;');
+        addClass(t, 'emoji');
+        tiles.push(t);
+      }
+      l = arrowBtn(p, 'left'); addClass(l, 'off');
+      r = arrowBtn(p, 'right'); addClass(r, 'off');
+      onTap(l, repeat);
+      wireTiles(tiles, function (j) {
+        if (phase === 0 && j === 0) {
+          phase = 1;
+          speak('You picked the dog. If you change your mind, just touch a different picture. Touch the cat.');
+        } else if (phase === 1 && j === 1) {
+          phase = 2;
+          removeClass(r, 'off'); addClass(r, 'pulse');
+          speak('See? Now the cat is picked instead of the dog. When you are ready, touch the arrow.');
+        } else if (phase < 2) {
+          markSelected(tiles, phase === 1 ? 0 : -1);
+          repeat();
+        }
+      });
+      onTap(r, function () { if (phase === 2) warmStep(step + 1); else repeat(); });
+      speak('Touch the dog.');
+    } else if (k === 2) {
+      p = panel('#3157d5');
+      onTap(p, repeat);
+      l = arrowBtn(p, 'left'); addClass(l, 'pulse');
+      r = arrowBtn(p, 'right'); addClass(r, 'off');
+      onTap(l, function () { warmStep(step + 1); });
+      onTap(r, repeat);
+      speak('You can go back to the page before, too. Touch the back arrow.');
+    } else {
+      stage.appendChild(el('div', '', box(300, 120, 400, 160), starSVG(130, true) + starSVG(160, true) + starSVG(130, true)));
+      stage.appendChild(el('div', 'big', box(0, 320, W, 60), 'Great job!'));
+      stage.appendChild(el('div', 'mid', box(0, 390, W, 40), 'You know how to use the screen.'));
+      var again = el('div', 'btn light', box(250, 520, 230, 80) + 'font-size:26px;line-height:76px', 'Again');
+      var home = el('div', 'btn', box(520, 520, 230, 80) + 'background:#1a6ee8;font-size:26px;line-height:80px', 'Home');
+      onTap(again, function () { warmStep(0); });
+      onTap(home, showHome);
+      stage.appendChild(again); stage.appendChild(home);
+      speak('Great job! You know how to use the screen. You are ready for the puzzles.');
+    }
+  }
+
+  /* ---------------- a practice test session ---------------- */
+  function startSession(kinds) {
+    hush();
+    var S = { id: now(), at: now(), parts: [], partIdx: 0 }, k, n = settings.count, P, i;
+    for (k = 0; k < kinds.length; k++) {
+      var ctx = { recent: [], keys: {} };
+      P = { kind: kinds[k], practice: settings.practice ? genItem(kinds[k], 1, ctx) : null,
+        items: genItems(kinds[k], n, ctx), picks: [], times: [], finished: false };
+      for (i = 0; i < n; i++) { P.picks.push(-1); P.times.push(0); }
+      S.parts.push(P);
+    }
+    startPart(S);
+  }
+  function startPart(S) {
+    var P = S.parts[S.partIdx];
+    if (P.practice) showPractice(S); else showQuestion(S, 0, true);
+  }
+  function exitSession(S) { hush(); saveSession(S); showHome(); }
+
+  function showPractice(S) {
+    var P = S.parts[S.partIdx], it = P.practice, info = KIND[P.kind], revealed = false;
+    clear();
+    topBar({ title: info.name + ' · Practice', onExit: function () { exitSession(S); },
+      onSpeak: function () { say(revealed ? explain(it) : DIRECTIONS[P.kind]); } });
+    var p = panel(info.color);
+    var tiles = renderItem(it, p);
+    var l = arrowBtn(p, 'left'), r = arrowBtn(p, 'right');
+    addClass(l, 'off');
+    wireTiles(tiles, function () {
+      if (revealed) return;
+      revealed = true;
+      // Like the real practice questions: the narrator explains the answer. It never says right or wrong.
+      say('Let’s look at this one together. ' + explain(it) + ' Now touch the arrow.');
+      setTimeout(function () { addClass(tiles[it.answer], 'hint'); addClass(r, 'pulse'); }, 600);
+    });
+    onTap(r, function () { showQuestion(S, 0, true); });
+    say('Let’s practice. ' + DIRECTIONS[P.kind]);
+  }
+
+  function showQuestion(S, i, first) {
+    var P = S.parts[S.partIdx], it = P.items[i], info = KIND[P.kind], n = P.items.length, shown = now();
+    clear();
+    function leave() { P.times[i] += now() - shown; }
+    topBar({ title: info.name + ' · ' + (i + 1) + ' of ' + n, onExit: function () { leave(); exitSession(S); },
+      onSpeak: function () { say(first && !P.practice ? DIRECTIONS[P.kind] : shortPrompt(it)); } });
+    var p = panel(info.color);
+    var tiles = renderItem(it, p);
+    markSelected(tiles, P.picks[i]);
+    wireTiles(tiles, function (k) { P.picks[i] = k; });
+    var l = arrowBtn(p, 'left'), r = arrowBtn(p, 'right');
+    if (i === 0) addClass(l, 'off');
+    onTap(l, function () { if (i === 0) return; leave(); showQuestion(S, i - 1, false); });
+    onTap(r, function () {
+      leave();
+      if (i < n - 1) showQuestion(S, i + 1, false);
+      else { P.finished = true; showStop(S); }
+    });
+    if (first) say(P.practice ? 'Now you will do some by yourself. ' + shortPrompt(it) : DIRECTIONS[P.kind]);
+    else say(shortPrompt(it));
+  }
+
+  function showStop(S) {
+    clear(); hush();
+    var more = S.partIdx < S.parts.length - 1;
+    stage.appendChild(el('div', '', box(380, 90, 240, 240), stopSVG(240)));
+    stage.appendChild(el('div', 'big', box(0, 360, W, 60), 'Stop'));
+    stage.appendChild(el('div', 'mid', box(0, 430, W, 40), 'You finished this part.'));
+    var go = el('div', 'btn', box(350, 540, 300, 90) + 'background:#1a6ee8;font-size:30px;font-weight:bold;line-height:90px', more ? 'Next part →' : 'Done');
+    onTap(go, function () {
+      if (more) { S.partIdx++; startPart(S); }
+      else { saveSession(S); showDone(); }
+    });
+    stage.appendChild(go);
+    say('Stop. You finished this part.');
+    if (!more) saveSession(S);
+  }
+  function showDone() {
+    clear();
+    stage.appendChild(el('div', '', box(300, 110, 400, 160), starSVG(130, true) + starSVG(160, true) + starSVG(130, true)));
+    stage.appendChild(el('div', 'big', box(0, 310, W, 60), 'All done!'));
+    stage.appendChild(el('div', 'mid', box(0, 380, W, 40), 'You worked hard.'));
+    var home = el('div', 'btn', box(375, 500, 250, 84) + 'background:#1a6ee8;font-size:28px;line-height:84px', 'Home');
+    onTap(home, showHome);
+    stage.appendChild(home);
+    stage.appendChild(el('div', 'tip', box(0, 640, W, 30) + 'text-align:center', 'Grown-ups: hold “Grown-ups” on the home screen to see results.'));
+    say('All done! You worked hard.');
+  }
+
+  /* ---------------- results ---------------- */
+  function loadSessions() { var l = load('pp.sessions', []); return (l && l.length !== undefined) ? l : []; }
+  function saveSession(S) {
+    var rec = { id: S.id, at: S.at, parts: [] }, k, P, j, any;
+    for (k = 0; k < S.parts.length; k++) {
+      P = S.parts[k]; any = P.finished;
+      for (j = 0; j < P.picks.length; j++) if (P.picks[j] >= 0) any = true;
+      if (any) rec.parts.push({ kind: P.kind, items: P.items, picks: P.picks, times: P.times, finished: P.finished });
+    }
+    if (!rec.parts.length) return;
+    var list = loadSessions(), out = [rec];
+    for (k = 0; k < list.length && out.length < 25; k++) if (list[k].id !== rec.id) out.push(list[k]);
+    while (!save('pp.sessions', out) && out.length > 1) out.pop();
+  }
+  function score(part) {
+    var c = 0, j;
+    for (j = 0; j < part.items.length; j++) if (part.picks[j] === part.items[j].answer) c++;
+    return c;
+  }
+  function totalTime(part) { var t = 0, j; for (j = 0; j < part.times.length; j++) t += part.times[j] || 0; return t; }
+  function fmtTime(ms) {
+    var s = Math.round(ms / 1000), m = Math.floor(s / 60);
+    s = s % 60;
+    return m ? m + ' min ' + s + ' sec' : s + ' sec';
+  }
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function fmtDate(t) {
+    var d = new Date(t), h = d.getHours(), m = d.getMinutes();
+    return MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + ((h % 12) || 12) + ':' + (m < 10 ? '0' : '') + m + (h < 12 ? ' AM' : ' PM');
+  }
+
+  function segmented(x, y, options, current, onSel) {
+    var i, w = 96;
+    for (i = 0; i < options.length; i++) {
+      (function (opt) {
+        var b = el('div', 'btn light' + (opt[0] === current ? ' on' : ''), box(x + i * (w + 10), y, w, 50) + 'font-size:20px;line-height:46px;border-radius:12px', opt[1]);
+        onTap(b, function () { onSel(opt[0]); });
+        stage.appendChild(b);
+      })(options[i]);
+    }
+  }
+
+  function showGrownups() {
+    hush(); clear();
+    topBar({ title: 'Grown-ups', onBack: showHome, backLabel: '‹ Home' });
+    stage.appendChild(el('div', 'setlbl', box(40, 88, 420, 50) + 'line-height:50px', 'Questions in each part'));
+    segmented(480, 88, [[6, '6'], [10, '10'], [14, '14'], [18, '18']], settings.count, function (v) { settings.count = v; saveSettings(); showGrownups(); });
+    stage.appendChild(el('div', 'setlbl', box(40, 152, 420, 50) + 'line-height:50px', 'Read directions out loud'));
+    segmented(480, 152, [[true, 'On'], [false, 'Off']], settings.speak, function (v) {
+      settings.speak = v; saveSettings(); showGrownups(); if (v) say('Directions will be read out loud.');
+    });
+    stage.appendChild(el('div', 'setlbl', box(40, 212, 430, 64), 'Practice question first<br><span style="font-size:16px;color:#7a8597">The voice explains the answer, like the real test.</span>'));
+    segmented(480, 216, [[true, 'On'], [false, 'Off']], settings.practice, function (v) { settings.practice = v; saveSettings(); showGrownups(); });
+
+    stage.appendChild(el('div', 'h2', box(40, 292, 400, 36), 'Results'));
+    stage.appendChild(el('div', 'tip', box(300, 298, 660, 30) + 'text-align:right', 'Your child never sees right or wrong. Only this screen shows it.'));
+    var list = el('div', 'scroll', box(40, 336, 920, 330));
+    list.setAttribute('data-scroll', '1');
+    stage.appendChild(list);
+    var sessions = loadSessions(), i;
+    if (!sessions.length) list.appendChild(el('div', 'empty', '', 'No results yet.'));
+    for (i = 0; i < sessions.length; i++) {
+      (function (idx) {
+        var rec = sessions[idx], parts = [], k, P;
+        for (k = 0; k < rec.parts.length; k++) {
+          P = rec.parts[k];
+          parts.push(KIND[P.kind].name + ' ' + score(P) + '/' + P.items.length + (P.finished ? '' : ' (stopped early)'));
+        }
+        var row = el('div', 'row', '', '<div class="d">' + fmtDate(rec.at) + '</div>' + parts.join(' · '));
+        onTap(row, function () { showSession(idx); });
+        list.appendChild(row);
+      })(i);
+    }
+    var clr = el('div', 'hold', box(40, 680, 300, 52), '<div class="fill"></div><span style="line-height:52px;font-size:18px">Clear results (hold)</span>');
+    onHold(clr, 1500, function () { save('pp.sessions', []); showGrownups(); });
+    stage.appendChild(clr);
+    stage.appendChild(el('div', 'tip', box(360, 680, 600, 52) + 'text-align:right', 'Results are saved on this device only.'));
+  }
+
+  function showSession(idx) {
+    var rec = loadSessions()[idx];
+    if (!rec) { showGrownups(); return; }
+    clear();
+    topBar({ title: fmtDate(rec.at), onBack: showGrownups, backLabel: '‹ Results' });
+    var wrap = el('div', 'scroll', box(40, 80, 920, 650) + 'padding:16px 20px');
+    wrap.setAttribute('data-scroll', '1');
+    stage.appendChild(wrap);
+    var k, j;
+    for (k = 0; k < rec.parts.length; k++) {
+      var P = rec.parts[k];
+      wrap.appendChild(el('div', 'ptitle', '', KIND[P.kind].name + ': ' + score(P) + ' of ' + P.items.length + ' correct'));
+      wrap.appendChild(el('div', 'pmeta', '', 'Time: ' + fmtTime(totalTime(P)) + (P.finished ? '' : ' · stopped early') +
+        ' · Tap a number to see the question.'));
+      var chips = el('div', '', 'position:relative;margin-bottom:14px');
+      for (j = 0; j < P.items.length; j++) {
+        (function (pk, ij) {
+          var part = rec.parts[pk], cls = part.picks[ij] < 0 ? 'skip' : (part.picks[ij] === part.items[ij].answer ? 'ok' : 'no');
+          var c = el('div', 'chip ' + cls, '', String(ij + 1));
+          onTap(c, function () { showReview(idx, pk, ij); });
+          chips.appendChild(c);
+        })(k, j);
+      }
+      wrap.appendChild(chips);
+    }
+    wrap.appendChild(el('div', 'tip', 'position:relative;margin-top:6px', 'Green = correct · Red = missed · Gray = no answer'));
+  }
+
+  function showReview(idx, pk, i) {
+    var rec = loadSessions()[idx];
+    if (!rec) { showGrownups(); return; }
+    var P = rec.parts[pk], it = P.items[i], n = P.items.length, pickd = P.picks[i];
+    clear();
+    topBar({ title: KIND[P.kind].name + ' ' + (i + 1) + ' of ' + n, onBack: function () { showSession(idx); }, backLabel: '‹ Results',
+      right: pickd < 0 ? 'No answer' : (pickd === it.answer ? 'Correct' : 'Missed') });
+    var p = panel(KIND[P.kind].color);
+    var tiles = renderItem(it, p);
+    if (pickd >= 0) addClass(tiles[pickd], 'sel');
+    addClass(tiles[it.answer], 'right');
+    p.appendChild(el('div', 'explain', box(160, 530, 608, 112),
+      '<b style="color:#1a6ee8">Blue</b> = her answer · <b style="color:#2e9e44">Green</b> = correct answer<br>' + explain(it) +
+      ' <span style="color:#999">(' + fmtTime(P.times[i] || 0) + ')</span>'));
+    var l = arrowBtn(p, 'left'), r = arrowBtn(p, 'right');
+    if (i === 0) addClass(l, 'off');
+    if (i === n - 1) addClass(r, 'off');
+    onTap(l, function () { if (i > 0) showReview(idx, pk, i - 1); });
+    onTap(r, function () { if (i < n - 1) showReview(idx, pk, i + 1); });
+  }
+
+  // test hooks for automated checks (harmless in normal use)
+  window.__pp = { genItems: genItems, explain: explain, figKey: figKey };
+
+  showHome();
+})();
+</script>
+</body>
+</html>
