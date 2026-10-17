@@ -23,6 +23,7 @@ Questions get harder through each part, the way the real test does.
 
 ## Matches the real test
 
+- **Same look as the slide:** each part's screen copies its example's layout and colors. The colored frame, gray panel, tile sizes and spacing, number strip, bold 1–5 and A–E labels and small gray arrows were measured from the screenshots and scaled up. The fruit example uses flat clip art like the slide.
 - **40 questions** per part with a **30-minute** limit. Both can be changed in Grown-ups.
 - **Wordless animated directions.** A hand shows how to pick an answer and touch the arrow.
 - **3 practice questions** that she has to get right. If she picks wrong, the hand points to the right answer. Practice questions are the only place the app helps her.
