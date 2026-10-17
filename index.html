@@ -159,6 +159,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
   if (typeof settings.timer !== 'boolean') settings.timer = true;
   if (typeof settings.speak !== 'boolean') settings.speak = false;
   if (typeof settings.howto !== 'boolean') settings.howto = true;
+  if (typeof settings.older !== 'boolean') settings.older = false;
   function saveSettings() { save('pp.settings2', settings); }
 
   /* ---------------- fit the 1000x750 stage to any screen ---------------- */
@@ -1011,7 +1012,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
   var NV_SUBS = { 1: ['pattern', 'split', 'analogy', 'matrix'], 2: ['pattern', 'split', 'analogy', 'matrix', 'combine'],
     3: ['pattern', 'split', 'analogy', 'matrix', 'combine'] };
   function nvGenerate(diff, sub) {
-    sub = sub || pick(NV_SUBS[diff]);
+    sub = sub || pick(settings.older ? NV_SUBS[diff] : without(NV_SUBS[diff], ['combine']));
     var fn = sub === 'pattern' ? pcTry : (sub === 'matrix' ? nvMatrixTry : (sub === 'split' ? nvSplitTry : (sub === 'combine' ? nvCombineTry : nvAnalogyTry)));
     var it = null, tries = 0;
     while (!it && tries++ < 300) it = fn(diff);
@@ -1774,11 +1775,12 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
       ['Questions in each part<br><small>The real test has 40.</small>', [[10, '10'], [20, '20'], [40, '40']], 'count'],
       ['30-minute time limit<br><small>Same limit as the real test.</small>', [[true, 'On'], [false, 'Off']], 'timer'],
       ['How-to animation + 3 practice<br><small>The real test starts this way.</small>', [[true, 'On'], [false, 'Off']], 'howto'],
-      ['Read directions out loud<br><small>The real test has no voice.</small>', [[true, 'On'], [false, 'Off']], 'speak']
+      ['Read directions out loud<br><small>The real test has no voice.</small>', [[true, 'On'], [false, 'Off']], 'speak'],
+      ['\u201CPut together\u201D shape puzzles<br><small>Starts in 2nd grade on the Naglieri shapes test.</small>', [[true, 'On'], [false, 'Off']], 'older']
     ], i;
     for (i = 0; i < rows.length; i++) {
       (function (row, k) {
-        var y = 76 + k * 62;
+        var y = 72 + k * 58;
         stage.appendChild(el('div', 'setlbl', box(40, y + 2, 440, 54), row[0]));
         segmented(560, y + 4, row[1], settings[row[2]], function (v) {
           settings[row[2]] = v; saveSettings(); showGrownups();
@@ -1786,9 +1788,9 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
         });
       })(rows[i], i);
     }
-    stage.appendChild(el('div', 'h2', box(40, 330, 400, 36), 'Results'));
-    stage.appendChild(el('div', 'tip', box(300, 336, 660, 30) + 'text-align:right', 'Your child never sees right or wrong. Only this screen shows it.'));
-    var list = el('div', 'scroll', box(40, 372, 920, 296));
+    stage.appendChild(el('div', 'h2', box(40, 368, 400, 36), 'Results'));
+    stage.appendChild(el('div', 'tip', box(300, 374, 660, 30) + 'text-align:right', 'Your child never sees right or wrong. Only this screen shows it.'));
+    var list = el('div', 'scroll', box(40, 408, 920, 262));
     list.setAttribute('data-scroll', '1');
     stage.appendChild(list);
     var sessions = loadSessions();
