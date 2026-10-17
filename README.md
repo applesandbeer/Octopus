@@ -15,11 +15,17 @@ The goal is to make the child comfortable with the **touchscreen mechanics** and
 
 | Part | What the real test covers | Question types in this app |
 |---|---|---|
-| **Verbal** (blue) | Six pictures. Find the one that doesn't share the idea the other five share. | Ideas based on **groups** (fruit, animals, vehicles, clothes, tools, buildings…), **where things live** (land vs. water), **what things do** (fly, give light, make music, draw or write) and **how things look** (red, yellow, round, cold). |
-| **Nonverbal** (purple) | Relationships among shapes: color, order and which way they face. The Naglieri Nonverbal test families are pattern completion, reasoning by analogy, serial reasoning and spatial visualization. | **Missing piece** (pattern completion)<br>**2×2 puzzles** (analogy), including the slide's half-colored tiles that turn, trade colors or change the inside shape<br>**3×3 grids** (serial reasoning: sizes, shapes, colors, counts, turning)<br>**Put together** (spatial: two pictures combine to make the third). **Off by default**, because on the Naglieri shapes test this type starts in 2nd grade. Turn it on in Grown-ups. |
-| **Quantitative** (green) | Numbers and shapes in a pattern, using basic math. | **Number rows** (up or down by 1 or 2, repeating patterns)<br>**Dot and shape rows**<br>**Boxes of objects** (1 gift, 2 gifts…)<br>**Number pairs** (3→4, so 6→?)<br>**Dots ↔ numbers** (counting)<br>**3×3 number grids** (counting up, each row has one of each, adding) |
+| **Verbal** (blue) | Six pictures. Find the one that doesn't share the idea the other five share. | Ideas based on **groups** (fruit, animals, vehicles, clothes, buildings…), **where things live** (land vs. water), **what things do** (fly, give light, make music, draw or write) and **how things look** (red, yellow, round, cold). |
+| **Nonverbal** (purple) | Relationships among shapes: color, order and which way they face. The Naglieri Nonverbal test families are pattern completion, reasoning by analogy, serial reasoning and spatial visualization. | **Missing piece** (pattern completion)<br>**2×2 puzzles** (analogy), including the slide's half-colored tiles that turn, trade colors or change the inside shape<br>**3×3 grids** (serial reasoning: sizes, shapes, colors, counts, turning). These start in 1st grade on the older Naglieri shapes test, but a sample from the current test shows one, so they're included. |
+| **Quantitative** (green) | Numbers and shapes in a pattern, using basic math. | **Number rows** (counting up or down by 1, repeating patterns)<br>**Dot and shape rows**<br>**Boxes of objects** (1 gift, 2 gifts…)<br>**Number pairs** (3→4, so 6→?)<br>**Dots ↔ numbers** (counting)<br>**3×3 number grids** (counting up, each row has one of each, adding) |
 
 Questions get harder through each part, the way the real test does.
+
+**Kindergarten level only.** Question types that start in later grades are left out:
+- "Put together" shape puzzles start in 2nd grade.
+- Counting by 2s is a 1st-grade skill in Texas's school standards.
+
+Numbers stay at 20 or below, and the math stays at kindergarten level: counting, patterns, and adding or taking away within 10.
 
 ## Matches the real test
 
