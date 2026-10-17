@@ -283,17 +283,23 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;font-family:-apple-system,"Hel
   }
   // The real test has no spoken words, so the voice is used in tests only when a grown-up turns it on.
   // force = true is used by Touch Practice, which always talks.
+  var SPEECH_RATE = 0.72; // slower than normal so a 4-year-old can follow along
   function say(text, force) {
     if ((!settings.speak && !force) || !synth || !window.SpeechSynthesisUtterance || !text) return;
     var go = function () {
       speakTimer = null;
-      try {
-        var u = new window.SpeechSynthesisUtterance(text);
-        u.lang = 'en-US';
-        u.rate = 0.9;
-        if (voice) u.voice = voice;
-        synth.speak(u);
-      } catch (e) { /* ignore */ }
+      // One sentence at a time, so there is a short pause between sentences.
+      var parts = String(text).replace(/([.?!])\s+/g, '$1|').split('|'), i, u;
+      for (i = 0; i < parts.length; i++) {
+        if (!parts[i]) continue;
+        try {
+          u = new window.SpeechSynthesisUtterance(parts[i]);
+          u.lang = 'en-US';
+          u.rate = SPEECH_RATE;
+          if (voice) u.voice = voice;
+          synth.speak(u);
+        } catch (e) { /* ignore */ }
+      }
     };
     if (speakTimer) { clearTimeout(speakTimer); speakTimer = null; }
     if (synth.speaking || synth.pending) { try { synth.cancel(); } catch (e) { /* ignore */ } speakTimer = setTimeout(go, 150); }
