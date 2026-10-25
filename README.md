@@ -1,5 +1,7 @@
 # Puzzle Practice
 
+> **Also in this repo:** [Octo's Times Tables](times/), a multiplication game for 1st grade. It's at https://applesandbeer.github.io/Octopus/times/
+
 A practice app for young children getting ready for the **Naglieri General Ability Tests (NGAT)**, the abilities test Houston ISD uses for Gifted & Talented testing from Pre-K4 through 8th grade. It runs in the web browser on an iPad or phone, with nothing to install.
 
 The goal is to make the child comfortable with the **touchscreen mechanics** and the **format of the real test**. Questions are made up fresh every time, so they can't be memorized.
