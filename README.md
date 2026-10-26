@@ -1,6 +1,8 @@
 # Puzzle Practice
 
-> **Also in this repo:** [Octo's Times Tables](times/), a multiplication game for 1st grade. It's at https://applesandbeer.github.io/Octopus/times/
+> **Also in this repo:**
+> - [Octo's Times Tables](times/), a multiplication game for 1st grade: https://applesandbeer.github.io/Octopus/times/
+> - [Turtle Times](turtles/), an old-school arcade multiplication game: https://applesandbeer.github.io/Octopus/turtles/
 
 A practice app for young children getting ready for the **Naglieri General Ability Tests (NGAT)**, the abilities test Houston ISD uses for Gifted & Talented testing from Pre-K4 through 8th grade. It runs in the web browser on an iPad or phone, with nothing to install.
 

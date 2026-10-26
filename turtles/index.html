@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Turtle Times">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#000000">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" type="image/png" href="icon.png">
+<title>Turtle Times Arcade</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#000}
+body{position:fixed;left:0;top:0;right:0;bottom:0;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:rgba(0,0,0,0)}
+canvas{display:block;touch-action:none}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<script>
+(function(){
+"use strict";
+var W = 1024, H = 768;
+var cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+var SC = 1, OX = 0, OY = 0, DPR = 1;
+function fit(){
+  var w = window.innerWidth, h = window.innerHeight;
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  SC = Math.min(w/W, h/H); OX = (w - W*SC)/2; OY = (h - H*SC)/2;
+  cv.width = Math.floor(w*DPR); cv.height = Math.floor(h*DPR);
+  cv.style.width = w + "px"; cv.style.height = h + "px";
+}
+window.addEventListener("resize", fit);
+window.addEventListener("orientationchange", function(){ setTimeout(fit, 300); });
+fit();
+
+/* ================= saved data ================= */
+var KEY = "turtleTimes1", D;
+function freshSave(){
+  return { hi:[{n:"SHL",s:3000},{n:"TRT",s:2000},{n:"OCT",s:1500},{n:"ZIP",s:1000},{n:"BOB",s:500}],
+           facts:{}, unlock:0, music:true, voice:true, best:1 };
+}
+try { D = JSON.parse(localStorage.getItem(KEY)); } catch(e){ D = null; }
+if (!D || !D.hi) D = freshSave();
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(D)); } catch(e){} }
+
+/* ================= helpers ================= */
+function rnd(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+function shuffle(a){ for (var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+function pad(n,l){ var s = String(n); while (s.length < l) s = "0" + s; return s; }
+function lerp(a,b,t){ return a + (b-a)*t; }
+var time = 0;
+
+/* ================= pixel font (5x7) ================= */
+var FONT = {
+"0":["01110","10001","10011","10101","11001","10001","01110"],"1":["00100","01100","00100","00100","00100","00100","01110"],
+"2":["01110","10001","00001","00010","00100","01000","11111"],"3":["11110","00001","00001","01110","00001","00001","11110"],
+"4":["00010","00110","01010","10010","11111","00010","00010"],"5":["11111","10000","11110","00001","00001","10001","01110"],
+"6":["00110","01000","10000","11110","10001","10001","01110"],"7":["11111","00001","00010","00100","01000","01000","01000"],
+"8":["01110","10001","10001","01110","10001","10001","01110"],"9":["01110","10001","10001","01111","00001","00010","01100"],
+"A":["01110","10001","10001","11111","10001","10001","10001"],"B":["11110","10001","10001","11110","10001","10001","11110"],
+"C":["01110","10001","10000","10000","10000","10001","01110"],"D":["11100","10010","10001","10001","10001","10010","11100"],
+"E":["11111","10000","10000","11110","10000","10000","11111"],"F":["11111","10000","10000","11110","10000","10000","10000"],
+"G":["01110","10001","10000","10111","10001","10001","01111"],"H":["10001","10001","10001","11111","10001","10001","10001"],
+"I":["01110","00100","00100","00100","00100","00100","01110"],"J":["00111","00010","00010","00010","00010","10010","01100"],
+"K":["10001","10010","10100","11000","10100","10010","10001"],"L":["10000","10000","10000","10000","10000","10000","11111"],
+"M":["10001","11011","10101","10101","10001","10001","10001"],"N":["10001","10001","11001","10101","10011","10001","10001"],
+"O":["01110","10001","10001","10001","10001","10001","01110"],"P":["11110","10001","10001","11110","10000","10000","10000"],
+"Q":["01110","10001","10001","10001","10101","10010","01101"],"R":["11110","10001","10001","11110","10100","10010","10001"],
+"S":["01111","10000","10000","01110","00001","00001","11110"],"T":["11111","00100","00100","00100","00100","00100","00100"],
+"U":["10001","10001","10001","10001","10001","10001","01110"],"V":["10001","10001","10001","10001","10001","01010","00100"],
+"W":["10001","10001","10001","10101","10101","10101","01010"],"X":["10001","10001","01010","00100","01010","10001","10001"],
+"Y":["10001","10001","01010","00100","00100","00100","00100"],"Z":["11111","00001","00010","00100","01000","10000","11111"],
+"×":["00000","10001","01010","00100","01010","10001","00000"],"=":["00000","00000","11111","00000","11111","00000","00000"],
+"?":["01110","10001","00001","00010","00100","00000","00100"],"!":["00100","00100","00100","00100","00100","00000","00100"],
+"-":["00000","00000","00000","11111","00000","00000","00000"],"+":["00000","00100","00100","11111","00100","00100","00000"],
+":":["00000","01100","01100","00000","01100","01100","00000"],".":["00000","00000","00000","00000","00000","01100","01100"],
+"'":["00100","00100","01000","00000","00000","00000","00000"],"/":["00001","00010","00010","00100","01000","01000","10000"],
+">":["01000","00100","00010","00001","00010","00100","01000"],"<":["00010","00100","01000","10000","01000","00100","00010"],
+"@":["00000","01010","11111","11111","01110","00100","00000"],"^":["00100","01110","10101","00100","00100","00100","00100"],
+"_":["00100","00100","00100","00100","10101","01110","00100"],"#":["00000","01110","11111","11111","11111","01110","00000"]
+};
+var TC = {}, TCN = 0;
+function tcan(s, col){
+  var k = s + "|" + col, c = TC[k];
+  if (c) return c;
+  if (TCN > 500){ TC = {}; TCN = 0; }
+  c = document.createElement("canvas"); c.width = Math.max(1, s.length*6-1); c.height = 7;
+  var g = c.getContext("2d"); g.fillStyle = col;
+  for (var i=0;i<s.length;i++){
+    var gl = FONT[s.charAt(i)]; if (!gl) continue;
+    for (var y=0;y<7;y++) for (var x=0;x<5;x++) if (gl[y].charAt(x) === "1") g.fillRect(i*6+x, y, 1, 1);
+  }
+  TC[k] = c; TCN++; return c;
+}
+function txt(s, x, y, p, col, al, sh){
+  s = String(s).toUpperCase();
+  var c = tcan(s, col || "#fff"), w = c.width*p, h = 7*p;
+  var dx = Math.round(al === "c" ? x - w/2 : al === "r" ? x - w : x);
+  if (sh !== 0) ctx.drawImage(tcan(s, sh || "#000"), dx + Math.max(2,p/2|0), y + Math.max(2,p/2|0), w, h);
+  ctx.drawImage(c, dx, y, w, h);
+  return w;
+}
+
+/* ================= pixel sprites (drawn once, scaled up) ================= */
+var SPR = {};
+function spr(key, w, h, fn){
+  if (SPR[key]) return SPR[key];
+  var c = document.createElement("canvas"); c.width = w; c.height = h;
+  var g = c.getContext("2d");
+  fn(function(x,y,col){ g.fillStyle = col; g.fillRect(x,y,1,1); }, function(x,y,w2,h2,col){ g.fillStyle = col; g.fillRect(x,y,w2,h2); });
+  SPR[key] = c; return c;
+}
+var OUT = "#0c1f10";
+/* side view turtle, facing right. 27x16 cells */
+function sideTurtle(o, f){
+  return spr("s" + o.k + f + (o.open ? "o" : ""), 27, 16, function(px, rect){
+    var sx = 11, sy = 9, rx = 8.6, ry = 6.6, x, y;
+    function dome(x,y){ if (y > 8) return false; var dx=(x+.5-sx)/rx, dy=(y+.5-sy)/ry; return dx*dx+dy*dy <= 1; }
+    px(1,9,o.skin); px(2,9,o.skin); px(0,9,OUT);
+    var lo = f ? 1 : 0;
+    rect(4-lo,10,3,3,o.skin); rect(15+lo,10,3,3,o.skin); rect(4-lo,13,3,1,OUT); rect(15+lo,13,3,1,OUT);
+    rect(18,6,3,4,o.skin);
+    for (y=3;y<11;y++) for (x=19;x<27;x++){ var hx=(x+.5-22.5)/3.4, hy=(y+.5-7)/3; if (hx*hx+hy*hy <= 1) px(x,y,o.skin); }
+    px(23,6,"#fff"); px(24,6,"#000"); px(24,5,"#000");
+    px(25,8,OUT); px(24,8,OUT);
+    if (o.open){ rect(22,8,5,1,"#7a0000"); rect(22,9,5,1,"#e0452f"); px(25,9,"#fff"); px(23,9,"#fff"); }
+    if (o.angry){ px(22,4,OUT); px(23,4,OUT); px(24,4,OUT); px(25,5,OUT); px(23,6,"#ff3030"); }
+    if (o.glasses){ rect(22,5,4,2,"#000"); px(21,6,"#000"); px(20,6,"#000"); px(23,5,"#7fdcff"); }
+    if (o.band){ rect(19,4,7,1,o.band); px(18,5,o.band); px(17,6,o.band); px(17,5,o.band); }
+    if (o.crown){ rect(20,2,6,2,"#ffd23f"); px(20,1,"#ffd23f"); px(22,1,"#ffd23f"); px(24,1,"#ffd23f"); px(25,1,"#ffd23f"); px(22,2,"#e74c3c"); }
+    for (y=0;y<10;y++) for (x=0;x<22;x++){
+      if (!dome(x,y)) continue;
+      var edge = !dome(x-1,y) || !dome(x+1,y) || !dome(x,y-1);
+      px(x,y, edge ? OUT : ((y%3===0) || ((x + (Math.floor(y/3)%2)*2) % 4 === 0)) ? o.dark : o.shell);
+    }
+    rect(2,9,19,1,o.belly); rect(3,10,17,1,OUT);
+    if (o.spikes){ var xs=[5,9,13,17]; for (var i=0;i<xs.length;i++){ for (y=0;y<9;y++) if (dome(xs[i],y)){ px(xs[i],y-1,"#e8e8e8"); break; } } }
+  });
+}
+/* top view turtle (Space Invaders style). 16x17 cells */
+function topTurtle(k, shell, dark, f){
+  return spr("t" + k + f, 16, 17, function(px, rect){
+    var skin = "#9be564", fy = f ? 1 : 0, x, y;
+    rect(1,4+fy,3,2,skin); rect(12,4+fy,3,2,skin); rect(2,12-fy,3,2,skin); rect(11,12-fy,3,2,skin);
+    rect(6,0,4,3,skin); px(6,1,"#000"); px(9,1,"#000");
+    px(8,15,skin); px(8,16,skin);
+    function sh(x,y){ var dx=(x+.5-8)/5.3, dy=(y+.5-8.5)/6.2; return dx*dx+dy*dy <= 1; }
+    for (y=0;y<17;y++) for (x=0;x<16;x++){
+      if (!sh(x,y)) continue;
+      var edge = !sh(x-1,y) || !sh(x+1,y) || !sh(x,y-1) || !sh(x,y+1);
+      px(x,y, edge ? OUT : ((x+y)%4===0 || (x-y+40)%4===0) ? dark : shell);
+    }
+  });
+}
+var T_SWIM = {k:"sw", shell:"#2fbf4f", dark:"#1b7a31", skin:"#9be564", belly:"#f2d16b"};
+var T_GOLD = {k:"go", shell:"#ffd23f", dark:"#c99400", skin:"#ffe9a0", belly:"#fff3c4"};
+var T_HERO = {k:"he", shell:"#2fbf4f", dark:"#1b7a31", skin:"#9be564", belly:"#f2d16b", glasses:true, band:"#ff3b3b"};
+var T_BOSS = {k:"bo", shell:"#a3222b", dark:"#5c0d12", skin:"#7d9a2d", belly:"#d9c27a", crown:true, angry:true, spikes:true};
+function drawSpr(c, x, y, p, flip, alpha){
+  if (alpha !== undefined) ctx.globalAlpha = Math.max(0, alpha);
+  if (flip){ ctx.save(); ctx.translate(Math.round(x) + c.width*p, Math.round(y)); ctx.scale(-1,1); ctx.drawImage(c, 0, 0, c.width*p, c.height*p); ctx.restore(); }
+  else ctx.drawImage(c, Math.round(x), Math.round(y), c.width*p, c.height*p);
+  ctx.globalAlpha = 1;
+}
+/* eggs on a shell, laid out like a ten-frame (rows of 5) */
+function eggs(cx, cy, k, d){
+  var gap = Math.max(2, Math.round(d/4)), r1 = Math.min(k,5), r2 = k - r1, rh = d + gap;
+  var top = Math.round(cy - (r2 ? rh - gap/2 : d/2));
+  for (var r=0;r<2;r++){
+    var n = r ? r2 : r1; if (!n) continue;
+    var x0 = Math.round(cx - (n*(d+gap)-gap)/2), y = top + r*rh;
+    for (var i=0;i<n;i++){
+      var x = x0 + i*(d+gap);
+      ctx.fillStyle = "#3b2414"; ctx.fillRect(x-1, y-1, d+2, d+2);
+      ctx.fillStyle = "#fff6d5"; ctx.fillRect(x, y, d, d);
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(x+1, y+1, Math.max(2,d/3|0), Math.max(2,d/3|0));
+    }
+  }
+}
+
+/* ================= sound: tiny chiptune synth ================= */
+var AC = null, NOISE = null;
+function unlockAudio(){
+  if (!AC){
+    try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ AC = null; return; }
+    var len = AC.sampleRate, b = AC.createBuffer(1, len, AC.sampleRate), d = b.getChannelData(0);
+    for (var i=0;i<len;i++) d[i] = Math.random()*2-1;
+    NOISE = b;
+    var s = AC.createBufferSource(); s.buffer = AC.createBuffer(1,1,22050); s.connect(AC.destination); s.start(0);
+  }
+  if (AC.state === "suspended" && AC.resume) AC.resume();
+}
+function mtof(m){ return 440*Math.pow(2,(m-69)/12); }
+function tone(f, dur, type, vol, f2, when){
+  if (!AC) return;
+  var t = when || AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type || "square"; o.frequency.setValueAtTime(f, t);
+  if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  g.gain.setValueAtTime(vol || 0.08, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+function noise(dur, vol, hp){
+  if (!AC || !NOISE) return;
+  var t = AC.currentTime, s = AC.createBufferSource(), g = AC.createGain(), fl = AC.createBiquadFilter();
+  s.buffer = NOISE; fl.type = hp ? "highpass" : "lowpass"; fl.frequency.setValueAtTime(hp ? 1200 : 2400, t);
+  if (!hp) fl.frequency.exponentialRampToValueAtTime(120, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(fl); fl.connect(g); g.connect(AC.destination); s.start(t); s.stop(t + dur);
+}
+function sfx(n, v){
+  if (!AC) return;
+  var t = AC.currentTime;
+  if (n === "blip") tone(mtof(72 + (v||0)), 0.12, "square", 0.07);
+  else if (n === "coin"){ tone(988, 0.07, "square", 0.07); tone(1319, 0.25, "square", 0.07, 0, t+0.07); }
+  else if (n === "laser") tone(1400, 0.25, "square", 0.06, 180);
+  else if (n === "boom") noise(0.45, 0.35);
+  else if (n === "tink"){ tone(2200, 0.06, "triangle", 0.12); tone(3000, 0.12, "triangle", 0.08, 0, t+0.06); }
+  else if (n === "hurt") tone(320, 0.45, "sawtooth", 0.09, 60);
+  else if (n === "jump") tone(300, 0.16, "square", 0.07, 900);
+  else if (n === "splash") noise(0.35, 0.25, true);
+  else if (n === "throw") tone(500, 0.3, "triangle", 0.12, 1500);
+  else if (n === "fanfare"){ var ns=[72,76,79,84]; for (var i=0;i<4;i++) tone(mtof(ns[i]), i===3?0.35:0.1, "square", 0.07, 0, t+i*0.09); }
+  else if (n === "oneup"){ var u=[76,79,88,84,86,91]; for (var j=0;j<6;j++) tone(mtof(u[j]), 0.1, "square", 0.06, 0, t+j*0.08); }
+  else if (n === "over"){ var o=[67,66,65,64]; for (var k=0;k<4;k++) tone(mtof(o[k]), k===3?0.6:0.22, "triangle", 0.12, 0, t+k*0.25); }
+  else if (n === "warn"){ for (var w=0;w<3;w++) tone(880, 0.18, "square", 0.06, 440, t+w*0.3); }
+}
+var SONGS = {
+  title:{bpm:132, lead:[72,0,76,79,84,0,79,76,74,0,77,81,86,0,81,77], bass:[48,0,48,0,55,0,55,0,53,0,53,0,55,0,55,0]},
+  game:{bpm:140, lead:[67,0,71,74,0,71,72,0,69,0,72,76,0,74,72,0], bass:[43,0,55,0,43,0,55,0,45,0,57,0,47,0,59,0]},
+  boss:{bpm:168, lead:[69,72,76,72,69,72,76,79,68,71,76,71,68,71,74,76], bass:[45,0,45,0,45,0,45,0,44,0,44,0,40,0,40,0]}
+};
+var MUS = {song:null, name:"", next:0, step:0};
+function setSong(n){ if (MUS.name === n) return; MUS.name = n; MUS.song = SONGS[n] || null; MUS.step = 0; MUS.next = AC ? AC.currentTime + 0.05 : 0; }
+function musicTick(){
+  if (!AC || !D.music || !MUS.song) return;
+  var s = MUS.song, spb = 60/s.bpm/2;
+  if (MUS.next < AC.currentTime) MUS.next = AC.currentTime + 0.02;
+  while (MUS.next < AC.currentTime + 0.15){
+    var i = MUS.step % s.lead.length;
+    if (s.lead[i]) tone(mtof(s.lead[i]), spb*0.8, "square", 0.022, 0, MUS.next);
+    if (s.bass[i]) tone(mtof(s.bass[i]), spb*0.9, "triangle", 0.07, 0, MUS.next);
+    MUS.next += spb; MUS.step++;
+  }
+}
+
+/* ================= voice ================= */
+var VOICE = null;
+function pickVoice(){
+  if (!window.speechSynthesis) return;
+  var vs = speechSynthesis.getVoices();
+  for (var i=0;i<vs.length;i++) if (/^en[-_]US/i.test(vs[i].lang)){ if (!VOICE || /Samantha|Ava|Allison|Karen/.test(vs[i].name)) VOICE = vs[i]; }
+}
+if (window.speechSynthesis){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function say(s){
+  if (!D.voice || !window.speechSynthesis) return;
+  try {
+    speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(String(s).replace(/×/g, " times ").replace(/=/g, " equals "));
+    if (VOICE) u.voice = VOICE; u.rate = 0.95; u.pitch = 1.1;
+    speechSynthesis.speak(u);
+  } catch(e){}
+}
+
+/* ================= effects ================= */
+var PRT = [], FT = [], BN = null, SHAKE = 0, FLASH = 0, B = [], TM = [];
+function burst(x, y, col, n, sp){
+  for (var i=0;i<(n||16);i++){ var a = Math.random()*6.283, v = (sp||260)*(0.3+Math.random());
+    PRT.push({x:x, y:y, vx:Math.cos(a)*v, vy:Math.sin(a)*v - 80, life:0.5+Math.random()*0.6, c:col, s:rnd(4,9)}); }
+}
+function float(s, x, y, p, col){ FT.push({s:s, x:x, y:y, p:p||4, c:col||"#fff", t:0}); }
+function banner(s, col){ BN = {s:s, c:col||"#ffd23f", t:0}; }
+function after(sec, fn){ TM.push({t:sec, fn:fn}); }
+function hot(id, x, y, w, h){ B.push({id:id, x:x, y:y, w:w, h:h}); }
+function button(id, x, y, w, h, label, col, p){
+  ctx.fillStyle = "#000"; ctx.fillRect(x+6, y+6, w, h);
+  ctx.fillStyle = col; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.fillRect(x, y, w, 6);
+  ctx.fillStyle = "rgba(0,0,0,.3)"; ctx.fillRect(x, y+h-6, w, 6);
+  txt(label, x + w/2, y + h/2 - 3.5*(p||4), p || 4, "#fff", "c");
+  hot(id, x, y, w, h);
+}
+var STARS = [];
+for (var si=0; si<90; si++) STARS.push({x:rnd(0,W), y:rnd(0,H), s:rnd(1,3), tw:Math.random()*6});
+function starfield(){
+  ctx.fillStyle = "#05030f"; ctx.fillRect(0,0,W,H);
+  for (var i=0;i<STARS.length;i++){ var s = STARS[i]; ctx.globalAlpha = 0.4 + 0.6*Math.abs(Math.sin(time*1.5 + s.tw)); ctx.fillStyle = i%7 ? "#fff" : "#8ff"; ctx.fillRect(s.x, s.y, s.s*2, s.s*2); }
+  ctx.globalAlpha = 1;
+}
+var SCAN = document.createElement("canvas");
+(function(){ SCAN.width = W; SCAN.height = H; var g = SCAN.getContext("2d");
+  g.fillStyle = "rgba(0,0,0,.16)"; for (var y=0;y<H;y+=4) g.fillRect(0,y,W,2);
+  var r = g.createRadialGradient(W/2,H/2,H*0.45,W/2,H/2,H*0.85); r.addColorStop(0,"rgba(0,0,0,0)"); r.addColorStop(1,"rgba(0,0,0,.45)");
+  g.fillStyle = r; g.fillRect(0,0,W,H); })();
+
+/* ================= math: which facts, in what order ================= */
+/* easiest first: 2s, 10s, 5s, 1s, then bigger 2s/5s/10s, then 3s and 4s */
+var FACT_SETS = [[2,1,5],[10,1,5],[5,1,5],[1,1,5],[2,6,10],[5,6,10],[10,6,10],[3,1,5],[4,1,5],[3,6,10],[4,6,10]];
+var lastKey = "";
+function factPool(){
+  var n = Math.min(FACT_SETS.length, 3 + D.unlock), out = [];
+  for (var i=0;i<n;i++) for (var a=FACT_SETS[i][1]; a<=FACT_SETS[i][2]; a++) out.push({a:a, b:FACT_SETS[i][0]});
+  return out;
+}
+/* spaced practice: missed facts come back more often */
+function pickFact(){
+  var pool = factPool(), w = [], tot = 0;
+  for (var i=0;i<pool.length;i++){ var k = pool[i].a + "x" + pool[i].b; var x = k === lastKey ? 0 : [8,4,2,1,1][D.facts[k] || 0]; w.push(x); tot += x; }
+  var r = Math.random()*tot, j = 0;
+  while (j < pool.length-1 && r >= w[j]){ r -= w[j]; j++; }
+  lastKey = pool[j].a + "x" + pool[j].b;
+  return pool[j];
+}
+/* turn-around facts: 7 groups of 2 can be shown as 2 groups of 7 when space is tight */
+function orient(f, maxA){ var a = f.a, b = f.b; if (a > maxA && b <= maxA){ var t = a; a = b; b = t; } return {a:a, b:b, key:f.a + "x" + f.b}; }
+function grade(key, ok){ D.facts[key] = ok ? Math.min(4, (D.facts[key]||0) + 1) : 0; save(); }
+function choices(ans, a, b, n){
+  var c = [ans], cand = shuffle([ans+b, ans-b, ans+1, ans-1, a+b, ans+a, ans+2, ans-a, ans+10]);
+  for (var i=0;i<cand.length && c.length<n;i++) if (cand[i] > 0 && c.indexOf(cand[i]) < 0) c.push(cand[i]);
+  var x = ans + 3; while (c.length < n){ if (c.indexOf(x) < 0) c.push(x); x++; }
+  return shuffle(c);
+}
+
+/* ================= game flow ================= */
+var scene = "title", sceneT = 0, G = null, P = null, T = null, paused = false;
+var ORDER = ["catch", "invaders", "hop", "boss"], PROBS = {catch:3, invaders:3, hop:2, boss:5};
+function go(s){ scene = s; sceneT = 0; }
+function newGame(){
+  G = {score:0, lives:3, combo:0, round:1, wave:0, stage:"catch", probN:0};
+  TM = []; PRT = []; FT = []; BN = null;
+  startWave();
+}
+function startWave(){
+  G.stage = ORDER[G.wave % 4]; G.probN = 0; TM = []; BN = null;
+  go("intro");
+  if (G.stage === "boss"){ sfx("warn"); say("Warning! King Snapper is coming!"); }
+  else say(ST[G.stage].speak);
+}
+function beginStage(){ go("play"); ST[G.stage].init(); ST[G.stage].problem(); }
+function advance(){ if (G.probN >= PROBS[G.stage]) waveClear(); else ST[G.stage].problem(); }
+function right(x, y, base){
+  G.combo++;
+  var m = Math.min(G.combo, 5), pts = Math.round((base || 100) * (P.first ? 1 : 0.4)) * m;
+  G.score += pts; float("+" + pts, x, y, 4, "#ffd23f");
+  if (G.combo >= 2) float("COMBO X" + m, x, y + 40, 3, "#ff7bd5");
+  grade(P.key, P.first);
+  G.probN++;
+}
+function wrong(){
+  G.combo = 0; P.first = false; G.lives--; SHAKE = 0.35; FLASH = 0.25; sfx("hurt");
+  if (G.lives <= 0){ grade(P.key, false); after(2.4, gameOver); return true; }
+  return false;
+}
+function waveClear(){
+  go("clear");
+  var bonus = 500 * G.round; G.score += bonus;
+  var gotLife = G.lives < 5; if (gotLife) G.lives++;
+  G.clearMsg = ["WAVE CLEAR!", "BONUS " + bonus, gotLife ? "1UP! @" : ""];
+  if (G.stage === "boss"){ G.clearMsg[0] = "BOSS BEATEN!"; }
+  sfx("oneup"); say(G.stage === "boss" ? "You beat King Snapper!" : "Wave clear!");
+  after(2.8, function(){
+    if (G.stage === "boss"){ G.round++; D.unlock++; D.best = Math.max(D.best||1, G.round); save(); }
+    G.wave++; startWave();
+  });
+}
+function gameOver(){ TM = []; go("over"); sfx("over"); say("Game over! Great try."); }
+function qualifies(){ return G && G.score > 0 && G.score > D.hi[D.hi.length-1].s; }
+function continueGame(){ G.score = 0; G.lives = 3; G.combo = 0; TM = []; startWave(); }
+
+/* ================= STAGE 1: SHELL CATCH (equal groups) ================= */
+var ST = {};
+var LANE = [178, 290, 402];
+function swimmer(l, x, sp){ return {lane:l, dir:l%2 ? -1 : 1, x:x, y:LANE[l], sp:sp*(0.85+Math.random()*0.3), gold:Math.random()<0.12, st:"swim", ph:Math.random()*6}; }
+ST.catch = {
+  name:"SHELL CATCH", speak:"Shell catch! Every turtle has the same number of eggs. Catch just enough!",
+  tips:["CATCH TURTLES TO FILL THE NEST.", "EVERY TURTLE HAS THE SAME EGGS.", "DON'T CATCH TOO MANY!"],
+  init:function(){ T = {ts:[], bub:[]}; for (var i=0;i<16;i++) T.bub.push({x:rnd(0,W), y:rnd(160,520), s:rnd(1,3)}); },
+  problem:function(){
+    var f = orient(pickFact(), 6);
+    P = {g:f.a, k:f.b, key:f.key, target:f.a*f.b, count:0, nest:[], first:true, done:false, lock:false, teach:0};
+    T.ts = []; var sp = Math.min(150, 62 + G.round*12);
+    for (var l=0;l<3;l++) for (var j=0;j<2;j++) T.ts.push(swimmer(l, j*560 + rnd(0,220) - 80, sp));
+    say("Catch " + P.target + " eggs. " + P.k + (P.k === 1 ? " egg" : " eggs") + " on each turtle.");
+  },
+  slot:function(i){ var n = G.round === 1 ? Math.max(P.g, P.nest.length) : Math.max(1, P.nest.length); return {x: W/2 - (n*112)/2 + i*112 + 17, y:592}; },
+  update:function(dt){
+    for (var i=T.ts.length-1;i>=0;i--){
+      var t = T.ts[i];
+      if (t.st === "swim"){
+        t.x += t.dir*t.sp*dt; t.y = LANE[t.lane] + Math.sin(time*3 + t.ph)*4;
+        if (t.dir > 0 && t.x > W + 20){ t.x = -170; t.gold = Math.random() < 0.12; }
+        if (t.dir < 0 && t.x < -170){ t.x = W + 20; t.gold = Math.random() < 0.12; }
+      } else if (t.st === "fly"){
+        t.ft = Math.min(1, t.ft + dt/0.4);
+        var s = this.slot(P.nest.indexOf(t));
+        t.x = lerp(t.fx, s.x, t.ft); t.y = lerp(t.fy, s.y, t.ft) - Math.sin(t.ft*3.14)*80;
+        if (t.ft >= 1){ t.st = "nest"; this.landed(t); }
+      } else if (t.st === "out"){
+        t.vy += 1300*dt; t.x += t.vx*dt; t.y += t.vy*dt; t.a -= dt*1.2;
+        if (t.a <= 0) T.ts.splice(i,1);
+      }
+    }
+    if (P.teach > 0) P.teach -= dt;
+    for (var b=0;b<T.bub.length;b++){ var q = T.bub[b]; q.y -= (20 + q.s*15)*dt; if (q.y < 160) { q.y = 520; q.x = rnd(0,W); } }
+  },
+  landed:function(t){
+    P.count += P.k;
+    var s = this.slot(P.nest.indexOf(t));
+    sfx("blip", P.nest.length*2); float(String(P.count), s.x + 40, s.y - 50, 5, "#fff");
+    if (t.gold){ G.score += 250; float("GOLD +250", s.x + 40, s.y - 90, 3, "#ffd23f"); sfx("coin"); }
+    if (P.count === P.target){
+      P.done = true; say(String(P.count));
+      after(0.6, function(){
+        banner(P.g + "×" + P.k + "=" + P.target); sfx("fanfare");
+        say(P.g + " turtles with " + P.k + " each. " + P.g + " times " + P.k + " equals " + P.target + "!");
+        right(W/2, 470); after(2.6, advance);
+      });
+    } else if (P.count > P.target){
+      P.lock = true; float("TOO MANY!", W/2, 520, 5, "#ff5252");
+      var dead = wrong(), self = this;
+      after(0.7, function(){
+        var o = P.nest.pop(); o.st = "out"; o.vx = rnd(-120,120); o.vy = -700; o.a = 1;
+        P.count -= P.k; P.teach = 3;
+        say("Too many! We need " + P.target + ". Count by " + P.k + "s.");
+        if (!dead) P.lock = false;
+      });
+    } else { P.lock = false; say(String(P.count)); }
+  },
+  tap:function(x, y){
+    if (P.done || P.lock) return;
+    for (var i=T.ts.length-1;i>=0;i--){
+      var t = T.ts[i];
+      if (t.st === "swim" && x > t.x - 10 && x < t.x + 172 && y > t.y - 15 && y < t.y + 105){
+        t.st = "fly"; t.fx = t.x; t.fy = t.y; t.ft = 0; P.nest.push(t); P.lock = true; sfx("jump");
+        var sp = Math.min(150, 62 + G.round*12);
+        T.ts.push(swimmer(t.lane, t.dir > 0 ? -170 : W + 40, sp));
+        T.ts[T.ts.length-1].dir = t.dir;
+        return;
+      }
+    }
+  },
+  draw:function(){
+    var y;
+    for (y=52;y<520;y+=16){ ctx.fillStyle = y < 140 ? "#0b2a6b" : "rgb(" + (10+y/30|0) + "," + (60+y/6|0) + "," + (150+y/8|0) + ")"; ctx.fillRect(0,y,W,16); }
+    ctx.fillStyle = "#6ec6ff"; for (var x=0;x<W;x+=32) ctx.fillRect(x + ((time*30)%32), 150 + (x%64 ? 0 : 4), 16, 4);
+    for (var b=0;b<T.bub.length;b++){ var q = T.bub[b]; ctx.fillStyle = "rgba(200,240,255,.6)"; ctx.fillRect(q.x, q.y, q.s*4, q.s*4); }
+    ctx.fillStyle = "#e9c46a"; ctx.fillRect(0,520,W,H-520);
+    ctx.fillStyle = "#d4a84b"; for (var s=0;s<60;s++) ctx.fillRect((s*137)%W, 530 + (s*53)%220, 6, 6);
+    for (var w=0;w<6;w++){ var wx = 60 + w*180; for (var k=0;k<6;k++){ ctx.fillStyle = k%2 ? "#1f8a3a" : "#2fbf4f"; ctx.fillRect(wx + Math.sin(time*2 + k*0.8 + w)*6, 500 - k*16, 12, 16); } }
+    txt("CATCH " + P.target + " EGGS", W/2, 64, 6, "#fff", "c");
+    txt(P.k + (P.k === 1 ? " EGG" : " EGGS") + " ON EVERY TURTLE", W/2, 118, 3, "#9fe3ff", "c");
+    for (var i=0;i<T.ts.length;i++){
+      var t = T.ts[i]; if (t.st === "nest") continue;
+      var f = Math.floor(time*5 + t.ph) % 2;
+      var p = t.st === "fly" ? lerp(6, 3, t.ft) : t.st === "out" ? 3 : 6;
+      var sp = sideTurtle(t.gold ? T_GOLD : T_SWIM, f), flip = t.dir < 0 && t.st === "swim";
+      drawSpr(sp, t.x, t.y, p, flip, t.st === "out" ? t.a : 1);
+      if (t.st !== "out") eggs(flip ? t.x + (27-11)*p : t.x + 11*p, t.y + 6*p, P.k, Math.round(p*2.1));
+    }
+    txt("NEST", 20, 548, 3, "#7a5520", "l", 0);
+    if (G.round === 1) for (var e=0;e<P.g;e++){ if (e < P.nest.length) continue; var s0 = this.slot(e); ctx.strokeStyle = "#b8892e"; ctx.lineWidth = 4; ctx.setLineDash([10,8]); ctx.strokeRect(s0.x - 4, s0.y - 4, 89, 56); ctx.setLineDash([]); }
+    for (var n=0;n<P.nest.length;n++){
+      var nt = P.nest[n]; if (nt.st !== "nest") continue;
+      var sl = this.slot(n);
+      drawSpr(sideTurtle(nt.gold ? T_GOLD : T_SWIM, 0), sl.x, sl.y, 3);
+      eggs(sl.x + 33, sl.y + 18, P.k, 6);
+      var lab = String((n+1)*P.k), blink = P.teach > 0 && Math.floor(P.teach*4) % 2;
+      txt(lab, sl.x + 40, sl.y + 62, 4, blink ? "#ff5252" : "#3b2414", "c", 0);
+    }
+    txt(P.count + "/" + P.target, W - 20, 720, 4, "#3b2414", "r", 0);
+  }
+};
+
+/* ================= STAGE 2: TURTLE INVADERS (arrays) ================= */
+var ROWC = [["#ff5252","#a31616"],["#ffa53b","#a8590d"],["#ffe14d","#a88f0d"],["#5cff8a","#14903a"],["#4dc3ff","#0d6ea8"]];
+ST.invaders = {
+  name:"TURTLE INVADERS", speak:"Turtle invaders! Count the rows. Then blast the right number!",
+  tips:["COUNT THE TURTLES IN ROWS.", "TAP A ROW TO COUNT IT.", "TAP THE RIGHT NUMBER TO FIRE!"],
+  init:function(){ T = {}; },
+  problem:function(){
+    var f = orient(pickFact(), 5);
+    P = {r:f.a, c:f.b, key:f.key, ans:f.a*f.b, first:true, lit:[], yOff:0, st:"aim", cx:W/2, tx:W/2, ly:0, boomN:0, boomT:0, dead:{}, sel:null};
+    var o = choices(P.ans, P.r, P.c, 3); P.bk = [];
+    for (var i=0;i<3;i++) P.bk.push({v:o[i], x:110 + i*312, alive:true});
+    say(P.r + (P.r === 1 ? " row" : " rows") + " of " + P.c + ". How many turtles?");
+  },
+  geo:function(){
+    var sx = P.c > 7 ? 74 : 84, w = (P.c-1)*sx + 64;
+    return {sx:sx, sy:70, x:W/2 - w/2 + Math.sin(time*1.3)*(P.c > 8 ? 20 : 50), y:142 + P.yOff, w:w};
+  },
+  update:function(dt){
+    var g = this.geo();
+    if (P.st === "move"){
+      var d = P.tx - P.cx, m = 1100*dt;
+      if (Math.abs(d) <= m){ P.cx = P.tx; P.st = "fire"; P.ly = 630; sfx("laser"); } else P.cx += d > 0 ? m : -m;
+    } else if (P.st === "fire"){
+      P.ly -= 1700*dt;
+      if (P.ly <= g.y + (P.r-1)*g.sy + 64){
+        if (P.sel.v === P.ans){ P.st = "boom"; P.boomT = 0; }
+        else {
+          P.st = "teach"; sfx("tink"); burst(P.sel.x + 85, 600, "#5cff8a", 24); P.sel.alive = false;
+          float("MISS!", P.cx, 520, 5, "#ff5252");
+          var dead = wrong(); P.yOff += 30; P.lit = []; P.dead2 = dead;
+          say("Oops! Let's count the rows by " + P.c + "s.");
+          for (var i=0;i<P.r;i++) (function(i){ after(1.4 + i*0.75, function(){ P.lit.push(i); sfx("blip", i*2); say(String((i+1)*P.c)); }); })(i);
+          after(1.6 + P.r*0.75, function(){ if (!P.dead2) P.st = "aim"; });
+        }
+      }
+    } else if (P.st === "boom"){
+      P.boomT -= dt;
+      if (P.boomT <= 0 && P.boomN < P.r){
+        var row = P.r - 1 - P.boomN; P.dead[row] = true; P.boomN++;
+        for (var j=0;j<P.c;j++) burst(g.x + j*g.sx + 32, g.y + row*g.sy + 32, ROWC[row%5][0], 8, 200);
+        SHAKE = 0.15; sfx("boom"); sfx("blip", P.boomN*2);
+        float(String(P.boomN*P.c), g.x + g.w + 50, g.y + row*g.sy + 10, 5, "#ffd23f");
+        say(String(P.boomN*P.c)); P.boomT = 0.55;
+        if (P.boomN === P.r){
+          P.st = "done";
+          after(0.5, function(){
+            banner(P.r + "×" + P.c + "=" + P.ans); sfx("fanfare");
+            say(P.r + " rows of " + P.c + " make " + P.ans + ". " + P.r + " times " + P.c + " equals " + P.ans + "!");
+            right(W/2, 420, 120); after(2.6, advance);
+          });
+        }
+      }
+    }
+  },
+  tap:function(x, y){
+    if (P.st !== "aim") return;
+    var g = this.geo();
+    for (var b=0;b<3;b++){ var k = P.bk[b]; if (k.alive && x > k.x && x < k.x + 170 && y > 560 && y < 650){ P.sel = k; P.tx = k.x + 85; P.st = "move"; return; } }
+    if (x > g.x - 30 && x < g.x + g.w + 30){
+      for (var i=0;i<P.r;i++){
+        var ry = g.y + i*g.sy;
+        if (y > ry - 3 && y < ry + g.sy - 3 && P.lit.indexOf(i) < 0){ P.lit.push(i); sfx("blip", P.lit.length*2); say(String(P.lit.length*P.c)); return; }
+      }
+    }
+  },
+  draw:function(){
+    starfield();
+    var g = this.geo(), f = Math.floor(time*2.5) % 2;
+    txt(P.r + (P.r === 1 ? " ROW" : " ROWS") + " OF " + P.c, W/2, 62, 4, "#fff", "c");
+    txt(P.r + "×" + P.c + "=" + (P.st === "done" ? P.ans : "?"), W/2, 100, 4, "#ffd23f", "c");
+    for (var i=0;i<P.r;i++){
+      if (P.dead[i]) continue;
+      var ry = g.y + i*g.sy, li = P.lit.indexOf(i);
+      if (li >= 0){
+        ctx.fillStyle = "rgba(255,210,63,.22)"; ctx.fillRect(g.x - 12, ry - 3, g.w + 24, g.sy - 2);
+        txt(String((li+1)*P.c), g.x + g.w + 22, ry + 18, 4, "#ffd23f", "l");
+      }
+      var sp = topTurtle("r" + (i%5), ROWC[i%5][0], ROWC[i%5][1], (f + i) % 2);
+      for (var j=0;j<P.c;j++) drawSpr(sp, g.x + j*g.sx, ry, 4);
+    }
+    if (P.st === "aim" && !P.lit.length && Math.floor(time*2) % 2) txt("TAP A ROW TO COUNT IT", W/2, 520, 3, "#8cf", "c");
+    for (var b=0;b<3;b++){
+      var k = P.bk[b]; if (!k.alive) continue;
+      var on = P.st === "done" && k.v === P.ans;
+      ctx.fillStyle = on ? "#ffd23f" : "#2fbf4f";
+      ctx.fillRect(k.x + 14, 560, 142, 14); ctx.fillRect(k.x, 574, 170, 76);
+      ctx.fillStyle = "#05030f"; ctx.fillRect(k.x + 60, 628, 50, 22);
+      txt(String(k.v), k.x + 85, 580, 6, "#fff", "c");
+    }
+    if (P.st === "fire" || P.st === "move"){ }
+    if (P.st === "fire"){ ctx.fillStyle = Math.floor(time*30)%2 ? "#fff" : "#7ff"; ctx.fillRect(P.cx - 4, P.ly, 8, 640 - P.ly); }
+    drawSpr(topTurtle("hero", "#2fbf4f", "#1b7a31", Math.floor(time*4)%2), P.cx - 32, 664, 4);
+    ctx.fillStyle = "#c0c0c0"; ctx.fillRect(P.cx - 5, 646, 10, 26);
+  }
+};
+
+/* ================= STAGE 3: RIVER HOP (skip counting) ================= */
+ST.hop = {
+  name:"RIVER HOP", speak:"River hop! Skip count to find the next log.",
+  tips:["HOP ACROSS THE RIVER.", "SKIP COUNT TO FIND THE NEXT LOG.", "THE LOGS KEEP FLOATING. TAKE YOUR TIME!"],
+  init:function(){ T = {}; },
+  laneY:function(i){ return 600 - i*96; },
+  problem:function(){
+    var f = orient(pickFact(), 5), g = f.a, k = f.b, i, j;
+    P = {g:g, k:k, key:f.key, ans:g*k, first:true, lane:0, pos:0, st:"wait", lanes:[], trail:[0], tx:W/2, ty:690, onLog:null, jt:0, hint:0};
+    for (i=0;i<g;i++){
+      var c = (i+1)*k, vals = [c], cand = shuffle([c+1, c-1, c+k, c-2, c+2, c+10, c-10]);
+      for (j=0;j<cand.length && vals.length<3;j++) if (cand[j] > i*k && vals.indexOf(cand[j]) < 0) vals.push(cand[j]);
+      while (vals.length < 3) vals.push(c + vals.length + 2);
+      shuffle(vals);
+      var lane = {dir:i%2 ? -1 : 1, sp:38 + G.round*7 + i*5, y:this.laneY(i), logs:[]}, x0 = rnd(-80, 120);
+      for (j=0;j<3;j++) lane.logs.push({v:vals[j], ok:vals[j] === c, x:x0 + j*475, w:180, bad:0, done:false});
+      P.lanes.push(lane);
+    }
+    P.goalY = this.laneY(g-1) - 48;
+    say("Hop by " + k + "s. " + g + (g === 1 ? " hop" : " hops") + " to cross.");
+  },
+  update:function(dt){
+    for (var i=0;i<P.lanes.length;i++){
+      var L = P.lanes[i];
+      for (var j=0;j<L.logs.length;j++){
+        var lg = L.logs[j]; lg.x += L.dir*L.sp*dt;
+        if (lg.x > W + 220) lg.x -= W + 400; if (lg.x + lg.w < -220) lg.x += W + 400;
+        if (lg.bad > 0) lg.bad -= dt;
+      }
+    }
+    if (P.hint > 0) P.hint -= dt;
+    if (P.st === "jump"){
+      P.jt = Math.min(1, P.jt + dt/0.38);
+      var tx = P.jlog ? P.jlog.x + P.jlog.w/2 : W/2, ty = P.jlog ? P.lanes[P.lane].y : P.goalY - 40;
+      P.tx = lerp(P.jx, tx, P.jt); P.ty = lerp(P.jy, ty, P.jt) - Math.sin(P.jt*3.14)*50;
+      if (P.jt >= 1) this.land();
+    } else if (P.onLog){ P.tx = P.onLog.x + P.onLog.w/2; P.ty = P.lanes[P.lane-1].y; }
+  },
+  land:function(){
+    if (!P.jlog){
+      P.st = "done"; P.onLog = null;
+      banner(P.g + "×" + P.k + "=" + P.ans); sfx("fanfare");
+      say(P.g + " hops of " + P.k + " make " + P.ans + ". " + P.g + " times " + P.k + " equals " + P.ans + "!");
+      right(W/2, 420, 150); after(2.6, advance); return;
+    }
+    P.onLog = P.jlog; P.jlog.done = true; P.pos = P.jlog.v; P.trail.push(P.pos); P.lane++;
+    sfx("blip", P.lane*2); say(String(P.pos));
+    if (P.lane === P.g){ P.st = "goalwait"; after(0.6, function(){ P.st = "jump"; P.jt = 0; P.jx = P.tx; P.jy = P.ty; P.jlog = null; P.onLog = null; sfx("jump"); }); }
+    else P.st = "wait";
+  },
+  tap:function(x, y){
+    if (P.st !== "wait") return;
+    var L = P.lanes[P.lane];
+    for (var j=0;j<L.logs.length;j++){
+      var lg = L.logs[j];
+      if (x > lg.x - 10 && x < lg.x + lg.w + 10 && y > L.y - 44 && y < L.y + 44){
+        if (lg.ok){ P.st = "jump"; P.jt = 0; P.jx = P.tx; P.jy = P.ty; P.jlog = lg; P.onLog = null; sfx("jump"); }
+        else {
+          lg.bad = 0.8; sfx("splash"); burst(lg.x + lg.w/2, L.y, "#7fd3ff", 20, 220);
+          float("SPLASH!", lg.x + lg.w/2, L.y - 70, 4, "#7fd3ff");
+          var dead = wrong(); P.hint = 3;
+          say("From " + P.pos + ", count " + P.k + " more.");
+          if (dead) P.st = "dead";
+        }
+        return;
+      }
+    }
+  },
+  draw:function(){
+    ctx.fillStyle = "#2e8b3a"; ctx.fillRect(0, 52, W, P.goalY - 52);
+    ctx.fillStyle = "#1e6e2a"; for (var s=0;s<40;s++) ctx.fillRect((s*197)%W, 60 + (s*61)%Math.max(20, P.goalY - 70), 8, 8);
+    ctx.fillStyle = "#1565c0"; ctx.fillRect(0, P.goalY, W, 648 - P.goalY);
+    ctx.fillStyle = "#4fa3ff";
+    for (var r=0;r<P.g;r++) for (var x=0;x<W;x+=64) ctx.fillRect((x + time*(r%2 ? -40 : 40)*0.5 + 2000) % (W+64) - 32, P.lanes[r].y + 30, 20, 4);
+    ctx.fillStyle = "#2e8b3a"; ctx.fillRect(0, 648, W, H-648);
+    ctx.fillStyle = "#c0392b"; ctx.fillRect(W/2 + 120, P.goalY - 90, 6, 80); ctx.fillStyle = "#ffd23f"; ctx.fillRect(W/2 + 126, P.goalY - 90, 40, 26);
+    txt("HOP BY " + P.k + "S", W/2, 62, 4, "#fff", "c");
+    txt(P.g + (P.g === 1 ? " HOP" : " HOPS") + " TO CROSS", W/2, 100, 3, "#c8ffc8", "c");
+    for (var i=0;i<P.lanes.length;i++){
+      var L = P.lanes[i];
+      for (var j=0;j<L.logs.length;j++){
+        var lg = L.logs[j], col = lg.done ? "#3fae4f" : lg.bad > 0 ? "#d6453a" : (P.hint > 0 && lg.ok && i === P.lane && Math.floor(P.hint*4)%2) ? "#ffd23f" : "#8b5a2b";
+        var dip = lg.bad > 0 ? 8 : 0;
+        ctx.fillStyle = "#000"; ctx.fillRect(lg.x + 4, L.y - 26 + 6 + dip, lg.w, 56);
+        ctx.fillStyle = col; ctx.fillRect(lg.x, L.y - 26 + dip, lg.w, 56);
+        ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(lg.x, L.y + 18 + dip, lg.w, 12); ctx.fillRect(lg.x + 30, L.y - 14 + dip, 40, 4); ctx.fillRect(lg.x + 110, L.y - 8 + dip, 36, 4);
+        ctx.fillStyle = "#d9a066"; ctx.fillRect(lg.x - 8, L.y - 22 + dip, 12, 48); ctx.fillRect(lg.x + lg.w - 4, L.y - 22 + dip, 12, 48);
+        txt(String(lg.v), lg.x + lg.w/2, L.y - 16 + dip, 5, i < P.lane && !lg.done ? "#c9a27a" : "#fff", "c");
+      }
+    }
+    var f = P.st === "jump" ? 1 : Math.floor(time*3)%2;
+    drawSpr(sideTurtle(T_HERO, f), P.tx - 54, P.ty - 82, 4);
+    ctx.fillStyle = "#777"; ctx.fillRect(W/2 - 70, 712, 140, 10);
+    txt("0", W/2 - 160, 690, 4, "#fff", "c");
+    txt(P.trail.join("  "), 24, 732, 3, "#ffd23f", "l");
+  }
+};
+
+/* ================= STAGE 4: BOSS — KING SNAPPER (times facts) ================= */
+ST.boss = {
+  name:"KING SNAPPER", speak:"",
+  tips:["BOSS BATTLE!", "ANSWER TIMES FACTS TO ATTACK.", "STUCK? TAP HELP TO SEE THE GROUPS."],
+  init:function(){ T = {hp:5, hit:0, proj:null, mouth:0, dying:0}; },
+  problem:function(){
+    var f = pickFact();
+    P = {a:f.a, b:f.b, key:f.a + "x" + f.b, ans:f.a*f.b, first:true, opts:choices(f.a*f.b, f.a, f.b, 4), no:[], hint:false, st:"ask", solved:false};
+    say(P.a + " times " + P.b + "?");
+  },
+  bossX:function(){ return W/2 - 148 + Math.sin(time*0.9)*90; },
+  update:function(dt){
+    if (T.hit > 0) T.hit -= dt; if (T.mouth > 0) T.mouth -= dt;
+    if (T.dying > 0){ T.dying -= dt; if (Math.random() < 0.5) burst(this.bossX() + rnd(20,280), rnd(90,250), pick(["#ffd23f","#ff5252","#fff"]), 10, 300); if (Math.random() < 0.15) sfx("boom"); }
+    var p = T.proj;
+    if (p){
+      p.t = Math.min(1, p.t + dt/0.45);
+      if (p.t >= 1){
+        T.proj = null;
+        if (p.good){
+          T.hp--; T.hit = 0.4; SHAKE = 0.3; sfx("boom"); burst(this.bossX() + 150, 190, "#ffd23f", 30);
+          P.solved = true; right(W/2, 300, 200);
+          say(P.a + " times " + P.b + " equals " + P.ans + "!");
+          if (T.hp <= 0){ T.dying = 2.6; say("You beat King Snapper!"); after(2.8, waveClear); }
+          else after(1.7, function(){ ST.boss.problem(); });
+        } else {
+          burst(W/2, 680, "#ff7b2f", 24); var dead = wrong(); P.hint = true;
+          say("Look at the groups. Count by " + P.b + "s.");
+          P.st = dead ? "dead" : "ask";
+        }
+      }
+    }
+  },
+  answer:function(i){
+    if (P.st !== "ask") return;
+    var v = P.opts[i];
+    if (P.no.indexOf(v) >= 0) return;
+    if (v === P.ans){ P.st = "shoot"; T.proj = {good:true, t:0}; sfx("throw"); }
+    else { P.no.push(v); P.st = "hurt"; T.mouth = 0.7; T.proj = {good:false, t:0}; sfx("laser"); }
+  },
+  tap:function(){},
+  draw:function(){
+    starfield();
+    var bx = this.bossX();
+    if (T.dying <= 0 || Math.floor(time*12)%2){
+      var bs = sideTurtle(T_BOSS, Math.floor(time*2)%2 + (T.mouth > 0 ? 0 : 0));
+      if (T.mouth > 0) bs = sideTurtle({k:"bo", shell:T_BOSS.shell, dark:T_BOSS.dark, skin:T_BOSS.skin, belly:T_BOSS.belly, crown:true, angry:true, spikes:true, open:true}, 0);
+      if (T.hit > 0 && Math.floor(time*20)%2) ctx.globalAlpha = 0.4;
+      drawSpr(bs, bx, 92, 11, true); ctx.globalAlpha = 1;
+    }
+    txt("KING SNAPPER", W/2, 62, 2, "#ff9a9a", "c", 0);
+    for (var h=0;h<5;h++){ ctx.fillStyle = h < T.hp ? "#ff3b3b" : "#3a1010"; ctx.fillRect(W/2 - 140 + h*58, 78, 50, 10); }
+    var q = P.a + "×" + P.b + "=" + (P.solved ? P.ans : "?");
+    txt(q, W/2, 290, 10, P.solved ? "#5cff8a" : "#fff", "c");
+    if (P.hint || P.solved){
+      var d = 18, gp = 4, per = Math.min(P.b, 5), bw, bh, tot;
+      for (;;){ bw = per*(d+gp) + 10; tot = P.a*(bw+12) - 12; if (tot <= 960 || d <= 8) break; d -= 2; gp = d > 12 ? 4 : 3; }
+      bh = (P.b > 5 ? 2 : 1)*(d+gp) + 10; var x0 = W/2 - tot/2;
+      for (var gi=0; gi<P.a; gi++){
+        var gx = x0 + gi*(bw+12); ctx.fillStyle = "#1d2b5a"; ctx.fillRect(gx, 378, bw, bh);
+        for (var di=0; di<P.b; di++){ ctx.fillStyle = "#ffd23f"; ctx.fillRect(gx + 5 + (di%5)*(d+gp), 383 + Math.floor(di/5)*(d+gp), d, d); }
+      }
+    }
+    for (var i=0;i<4;i++){
+      var v = P.opts[i], x = W/2 - 440 + i*224, no = P.no.indexOf(v) >= 0;
+      var col = no ? "#444" : (P.solved && v === P.ans) ? "#2fbf4f" : "#3d6fff";
+      button("ans" + i, x, 470, 200, 92, String(v), col, 7);
+      if (no){ ctx.fillStyle = "#ff5252"; ctx.fillRect(x + 20, 512, 160, 8); }
+    }
+    button("hint", 24, 640, 150, 80, "HELP", "#8b5cf6", 4);
+    drawSpr(sideTurtle(T_HERO, Math.floor(time*3)%2), W/2 - 68, 618, 5);
+    var p = T.proj;
+    if (p){
+      var px, py;
+      if (p.good){ px = lerp(W/2, bx + 150, p.t); py = lerp(640, 180, p.t); ctx.save(); ctx.translate(px, py); ctx.rotate(time*20); drawSpr(topTurtle("hero", "#2fbf4f", "#1b7a31", 0), -24, -26, 3); ctx.restore(); }
+      else { px = lerp(bx + 40, W/2, p.t); py = lerp(200, 650, p.t); ctx.fillStyle = "#ff7b2f"; ctx.fillRect(px - 16, py - 16, 32, 32); ctx.fillStyle = "#ffd23f"; ctx.fillRect(px - 8, py - 8, 16, 16); }
+    }
+  }
+};
+
+/* ================= drawing the screens ================= */
+function hud(){
+  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, 52);
+  txt("1UP", 16, 6, 2, "#ff5252", "l", 0); txt(pad(G.score, 6), 16, 22, 3, "#fff", "l", 0);
+  txt("HI " + pad(Math.max(D.hi[0].s, G.score), 6), W/2, 16, 3, "#ffd23f", "c", 0);
+  txt("ROUND " + G.round, 650, 18, 2, "#8cf", "l", 0);
+  var l = ""; for (var i=0;i<G.lives;i++) l += "@";
+  txt(l, W - 76, 14, 3, "#ff3b3b", "r", 0);
+  ctx.fillStyle = "#333"; ctx.fillRect(W - 60, 6, 48, 40); txt("II", W - 36, 15, 3, "#fff", "c", 0); hot("pause", W - 70, 0, 70, 56);
+  if (G.combo >= 2 && Math.floor(time*4)%2) txt("COMBO X" + Math.min(G.combo,5), 160, 22, 2, "#ff7bd5", "l", 0);
+}
+function drawTitle(){
+  starfield();
+  var word = "TURTLE", cols = ["#ff5252","#ffa53b","#ffe14d","#5cff8a","#4dc3ff","#b28cff"], p = 14, x0 = W/2 - (word.length*6-1)*p/2;
+  for (var i=0;i<word.length;i++) txt(word.charAt(i), x0 + i*6*p, 54 + Math.round(Math.sin(time*3 + i*0.7)*6), p, cols[(i + Math.floor(time*2))%6], "l", "#400");
+  txt("×TIMES×", W/2, 172, 9, "#ffd23f", "c", "#630");
+  for (var j=0;j<8;j++) drawSpr(topTurtle("r" + (j%5), ROWC[j%5][0], ROWC[j%5][1], (Math.floor(time*2.5) + j)%2), W/2 - 360 + j*92 + Math.sin(time)*40, 262, 4);
+  if (Math.floor(time*2.2)%2) txt("TAP TO START", W/2, 362, 5, "#fff", "c");
+  txt("HIGH SCORES", W/2, 430, 3, "#ff7bd5", "c");
+  for (var k=0;k<D.hi.length;k++){ var h = D.hi[k]; txt((k+1) + ". " + h.n + "  " + pad(h.s, 6), W/2, 466 + k*32, 3, k === 0 ? "#ffd23f" : "#fff", "c"); }
+  var sx = ((time*90) % (W + 300)) - 150;
+  drawSpr(sideTurtle(T_HERO, Math.floor(time*5)%2), sx, 640, 4);
+  button("music", W - 250, 680, 110, 60, D.music ? "MUSIC" : "MUSIC X", D.music ? "#3d6fff" : "#555", 2);
+  button("voice", W - 130, 680, 110, 60, D.voice ? "VOICE" : "VOICE X", D.voice ? "#3d6fff" : "#555", 2);
+  hot("parent", 0, 680, 140, 88); txt("GROWN-UPS", 16, 734, 2, "#556", "l", 0);
+}
+function drawIntro(){
+  starfield();
+  var s = ST[G.stage], boss = G.stage === "boss";
+  txt("ROUND " + G.round + "  STAGE " + (G.wave%4 + 1), W/2, 96, 4, "#8cf", "c");
+  if (boss && Math.floor(time*4)%2) txt("WARNING!", W/2, 150, 8, "#ff3b3b", "c");
+  txt(s.name, W/2, boss ? 230 : 170, 7, boss ? "#ff9a9a" : "#ffd23f", "c");
+  if (G.stage === "catch"){ var t = sideTurtle(T_SWIM, Math.floor(time*4)%2); drawSpr(t, W/2 - 81, 280, 6); eggs(W/2 - 81 + 66, 280 + 36, 3, 12); }
+  else if (G.stage === "invaders"){ for (var r=0;r<2;r++) for (var c=0;c<4;c++) drawSpr(topTurtle("r" + r, ROWC[r][0], ROWC[r][1], (Math.floor(time*2.5)+r)%2), W/2 - 160 + c*84, 270 + r*72, 4); }
+  else if (G.stage === "hop"){ drawSpr(sideTurtle(T_HERO, Math.floor(time*4)%2), W/2 - 81, 290 - Math.abs(Math.sin(time*4))*40, 6); }
+  else drawSpr(sideTurtle(T_BOSS, Math.floor(time*2)%2), W/2 - 148, 300, 11, true);
+  if (!boss) for (var i=0;i<s.tips.length;i++) txt(s.tips[i], W/2, 450 + i*44, 3, "#fff", "c");
+  else txt(s.tips[1], W/2, 490, 3, "#fff", "c");
+  if (sceneT > 0.6 && Math.floor(time*2.2)%2) txt("TAP TO START", W/2, 640, 5, "#5cff8a", "c");
+}
+function drawPlay(){
+  ST[G.stage].draw();
+  hud();
+}
+function drawOverlayText(){
+  for (var i=0;i<FT.length;i++){ var f = FT[i]; ctx.globalAlpha = Math.max(0, 1 - f.t/1.3); txt(f.s, f.x, f.y - f.t*60, f.p, f.c, "c"); }
+  ctx.globalAlpha = 1;
+  if (BN){
+    var k = Math.min(1, BN.t*5), p = Math.max(1, Math.round(12*k));
+    ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(0, 300, W, 130);
+    txt(BN.s, W/2, 365 - 3.5*p, p, BN.c, "c", "#600");
+  }
+  for (var j=0;j<PRT.length;j++){ var q = PRT[j]; ctx.globalAlpha = Math.max(0, Math.min(1, q.life*2)); ctx.fillStyle = q.c; ctx.fillRect(q.x, q.y, q.s, q.s); }
+  ctx.globalAlpha = 1;
+}
+function drawClear(){
+  drawPlay();
+  ctx.fillStyle = "rgba(0,0,0,.65)"; ctx.fillRect(0, 210, W, 300);
+  txt(G.clearMsg[0], W/2, 240, 10, Math.floor(time*6)%2 ? "#ffd23f" : "#fff", "c");
+  txt(G.clearMsg[1], W/2, 350, 5, "#5cff8a", "c");
+  if (G.clearMsg[2]) txt(G.clearMsg[2], W/2, 420, 5, "#ff7bd5", "c");
+}
+function drawOver(){
+  starfield();
+  txt("GAME OVER", W/2, 180, 12, "#ff3b3b", "c");
+  txt("SCORE " + pad(G.score, 6), W/2, 320, 5, "#fff", "c");
+  txt("GREAT TRY! YOUR BRAIN GOT STRONGER.", W/2, 390, 3, "#8cf", "c");
+  if (sceneT > 1.5){
+    if (qualifies()){ IN = {l:[0,0,0]}; go("initials"); return; }
+    button("cont", W/2 - 330, 520, 300, 100, "CONTINUE", "#2fbf4f", 4);
+    button("title", W/2 + 30, 520, 300, 100, "TITLE", "#555", 4);
+  }
+}
+var IN = {l:[0,0,0]}, LET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+function drawInitials(){
+  starfield();
+  txt("NEW HIGH SCORE!", W/2, 70, 6, Math.floor(time*6)%2 ? "#ffd23f" : "#ff7bd5", "c");
+  txt(pad(G.score, 6), W/2, 140, 5, "#fff", "c");
+  txt("ENTER YOUR NAME", W/2, 200, 3, "#8cf", "c");
+  for (var i=0;i<3;i++){
+    var x = W/2 - 240 + i*180;
+    button("up" + i, x, 240, 120, 80, "^", "#3d6fff", 6);
+    txt(LET.charAt(IN.l[i]), x + 60, 350, 14, "#fff", "c");
+    button("dn" + i, x, 470, 120, 80, "_", "#3d6fff", 6);
+  }
+  button("ok", W/2 - 120, 600, 240, 100, "DONE", "#2fbf4f", 5);
+}
+function drawBoard(){
+  starfield();
+  txt("HIGH SCORES", W/2, 80, 7, "#ff7bd5", "c");
+  for (var k=0;k<D.hi.length;k++){ var h = D.hi[k]; txt((k+1) + ". " + h.n + "  " + pad(h.s, 6), W/2, 190 + k*56, 5, h === G.myEntry && Math.floor(time*4)%2 ? "#ffd23f" : "#fff", "c"); }
+  button("cont", W/2 - 330, 520, 300, 100, "CONTINUE", "#2fbf4f", 4);
+  button("title", W/2 + 30, 520, 300, 100, "TITLE", "#555", 4);
+}
+function drawPause(){
+  ctx.fillStyle = "rgba(0,0,0,.75)"; ctx.fillRect(0, 0, W, H);
+  txt("PAUSED", W/2, 110, 9, "#fff", "c");
+  button("resume", W/2 - 180, 230, 360, 90, "RESUME", "#2fbf4f", 5);
+  button("music", W/2 - 180, 345, 360, 80, D.music ? "MUSIC ON" : "MUSIC OFF", "#3d6fff", 4);
+  button("voice", W/2 - 180, 445, 360, 80, D.voice ? "VOICE ON" : "VOICE OFF", "#3d6fff", 4);
+  button("quit", W/2 - 180, 560, 360, 80, "QUIT", "#a3222b", 4);
+}
+var resetArm = false;
+function drawParent(){
+  ctx.fillStyle = "#0b1030"; ctx.fillRect(0, 0, W, H);
+  txt("GROWN-UPS", W/2, 40, 6, "#fff", "c");
+  txt("BEST ROUND: " + (D.best||1) + "    FACT LEVEL: " + (3 + D.unlock > 11 ? 11 : 3 + D.unlock) + "/11", W/2, 110, 3, "#8cf", "c");
+  txt("TIMES FACTS (GREEN = KNOWS IT)", W/2, 160, 2, "#aaa", "c");
+  var bs = [1,2,3,4,5,10];
+  for (var a=1;a<=10;a++) txt(a + "×", 220 + (a-1)*66, 196, 2, "#aaa", "c", 0);
+  for (var r=0;r<bs.length;r++){
+    txt("×" + bs[r], 150, 230 + r*50, 2, "#aaa", "r", 0);
+    for (var c=1;c<=10;c++){
+      var bx = D.facts[c + "x" + bs[r]], col = bx === undefined ? "#333" : bx >= 3 ? "#2fbf4f" : bx >= 1 ? "#a7e08a" : "#ffd23f";
+      ctx.fillStyle = col; ctx.fillRect(190 + (c-1)*66, 220 + r*50, 60, 42);
+      txt(String(c*bs[r]), 220 + (c-1)*66, 232 + r*50, 2, "#000", "c", 0);
+    }
+  }
+  txt("GRAY = NOT SEEN  YELLOW = LEARNING  GREEN = KNOWS IT", W/2, 540, 2, "#aaa", "c", 0);
+  button("pclose", W/2 - 330, 600, 300, 90, "BACK", "#2fbf4f", 4);
+  button("preset", W/2 + 30, 600, 300, 90, resetArm ? "TAP AGAIN" : "RESET ALL", "#a3222b", 4);
+}
+
+/* ================= input ================= */
+function onBtn(id){
+  sfx("blip", 7);
+  if (id === "pause"){ paused = true; return; }
+  if (id === "resume"){ paused = false; return; }
+  if (id === "quit"){ paused = false; G = null; TM = []; go("title"); return; }
+  if (id === "music"){ D.music = !D.music; save(); return; }
+  if (id === "voice"){ D.voice = !D.voice; save(); if (!D.voice && window.speechSynthesis) speechSynthesis.cancel(); return; }
+  if (id === "parent"){ parentHold = time; return; }
+  if (id === "pclose"){ resetArm = false; go("title"); return; }
+  if (id === "preset"){ if (resetArm){ var m = D.music, v = D.voice; D = freshSave(); D.music = m; D.voice = v; save(); resetArm = false; } else resetArm = true; return; }
+  if (id.indexOf("ans") === 0){ ST.boss.answer(+id.charAt(3)); return; }
+  if (id === "hint"){ if (!P.hint){ P.hint = true; P.first = false; say(P.a + " groups of " + P.b + ". Count by " + P.b + "s."); } return; }
+  if (id.indexOf("up") === 0){ var i = +id.charAt(2); IN.l[i] = (IN.l[i] + 1) % 26; return; }
+  if (id.indexOf("dn") === 0){ var j = +id.charAt(2); IN.l[j] = (IN.l[j] + 25) % 26; return; }
+  if (id === "ok"){
+    var e = {n:LET.charAt(IN.l[0]) + LET.charAt(IN.l[1]) + LET.charAt(IN.l[2]), s:G.score};
+    D.hi.push(e); D.hi.sort(function(a,b){ return b.s - a.s; }); D.hi = D.hi.slice(0,5); save();
+    G.myEntry = e; go("board"); return;
+  }
+  if (id === "cont"){ continueGame(); return; }
+  if (id === "title"){ G = null; go("title"); return; }
+}
+var parentHold = -1;
+function tap(x, y){
+  unlockAudio();
+  for (var i=B.length-1;i>=0;i--){ var b = B[i]; if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h){ onBtn(b.id); return; } }
+  if (scene === "title"){ sfx("coin"); newGame(); }
+  else if (scene === "intro" && sceneT > 0.6){ sfx("coin"); beginStage(); }
+  else if (scene === "play" && !paused) ST[G.stage].tap(x, y);
+}
+function release(){ parentHold = -1; }
+function toStage(cx, cy){ return {x:(cx - OX)/SC, y:(cy - OY)/SC}; }
+cv.addEventListener("touchstart", function(e){ e.preventDefault(); var t = e.changedTouches[0], p = toStage(t.clientX, t.clientY); tap(p.x, p.y); }, {passive:false});
+cv.addEventListener("touchend", function(e){ e.preventDefault(); release(); }, {passive:false});
+cv.addEventListener("mousedown", function(e){ var p = toStage(e.clientX, e.clientY); tap(p.x, p.y); });
+cv.addEventListener("mouseup", release);
+document.addEventListener("visibilitychange", function(){ if (document.hidden && scene === "play") paused = true; });
+
+/* ================= main loop ================= */
+var last = 0;
+function update(dt){
+  time += dt; sceneT += dt;
+  if (parentHold >= 0 && time - parentHold > 1){ parentHold = -1; resetArm = false; go("parent"); }
+  var song = scene === "title" ? "title" : (scene === "play" || scene === "intro" || scene === "clear") ? (G && G.stage === "boss" ? "boss" : "game") : "";
+  setSong(paused ? "" : song); musicTick();
+  if (paused) return;
+  if (scene === "play" || scene === "clear" || scene === "over"){
+    var due = [], keep = [];
+    for (var i=0;i<TM.length;i++){ TM[i].t -= dt; if (TM[i].t <= 0) due.push(TM[i].fn); else keep.push(TM[i]); }
+    TM = keep;
+    for (var d=0; d<due.length; d++) due[d]();
+  }
+  if (scene === "play") ST[G.stage].update(dt);
+  for (var j=PRT.length-1;j>=0;j--){ var q = PRT[j]; q.vy += 500*dt; q.x += q.vx*dt; q.y += q.vy*dt; q.life -= dt; if (q.life <= 0) PRT.splice(j,1); }
+  for (var k=FT.length-1;k>=0;k--){ FT[k].t += dt; if (FT[k].t > 1.3) FT.splice(k,1); }
+  if (BN){ BN.t += dt; if (BN.t > 2.2) BN = null; }
+  if (SHAKE > 0) SHAKE -= dt; if (FLASH > 0) FLASH -= dt;
+}
+function draw(){
+  ctx.setTransform(1,0,0,1,0,0); ctx.fillStyle = "#000"; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.setTransform(SC*DPR, 0, 0, SC*DPR, OX*DPR, OY*DPR);
+  ctx.imageSmoothingEnabled = false; ctx.webkitImageSmoothingEnabled = false;
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
+  if (SHAKE > 0) ctx.translate(rnd(-8,8), rnd(-8,8));
+  B = [];
+  if (scene === "title") drawTitle();
+  else if (scene === "intro") drawIntro();
+  else if (scene === "play") drawPlay();
+  else if (scene === "clear") drawClear();
+  else if (scene === "over") drawOver();
+  else if (scene === "initials") drawInitials();
+  else if (scene === "board") drawBoard();
+  else if (scene === "parent") drawParent();
+  if (scene === "play" || scene === "clear") drawOverlayText();
+  if (FLASH > 0){ ctx.fillStyle = "rgba(255,0,0," + (FLASH*1.4).toFixed(2) + ")"; ctx.fillRect(0, 0, W, H); }
+  if (paused){ B = []; drawPause(); }
+  ctx.drawImage(SCAN, 0, 0);
+  ctx.restore();
+}
+function frame(ts){
+  var dt = Math.min(0.05, (ts - last)/1000 || 0); last = ts;
+  update(dt); draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+window.__tt = { get:function(){ return {scene:scene, G:G, P:P, T:T, paused:paused, D:D}; }, tap:tap, wave:function(n){ newGame(); G.wave = n; startWave(); } };
+})();
+</script>
+</body>
+</html>
