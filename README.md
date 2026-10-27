@@ -1,6 +1,7 @@
 # Puzzle Practice
 
 > **Also in this repo:**
+> - [Octo's ABCs](letters/), a letters and letter-sounds game for pre-K: https://applesandbeer.github.io/Octopus/letters/
 > - [Octo's Times Tables](times/), a multiplication game for 1st grade: https://applesandbeer.github.io/Octopus/times/
 > - [Turtle Times](turtles/), an old-school arcade multiplication game: https://applesandbeer.github.io/Octopus/turtles/
 
