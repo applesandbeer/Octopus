@@ -41,7 +41,7 @@ fit();
 var KEY = "turtleTimes1", D;
 function freshSave(){
   return { hi:[{n:"SHL",s:3000},{n:"TRT",s:2000},{n:"OCT",s:1500},{n:"ZIP",s:1000},{n:"BOB",s:500}],
-           facts:{}, unlock:0, music:true, voice:true, best:1 };
+           facts:{}, unlock:0, music:true, voice:true, best:1, bosses:0, hero:0 };
 }
 try { D = JSON.parse(localStorage.getItem(KEY)); } catch(e){ D = null; }
 if (!D || !D.hi) D = freshSave();
@@ -82,7 +82,7 @@ var FONT = {
 "'":["00100","00100","01000","00000","00000","00000","00000"],"/":["00001","00010","00010","00100","01000","01000","10000"],
 ">":["01000","00100","00010","00001","00010","00100","01000"],"<":["00010","00100","01000","10000","01000","00100","00010"],
 "@":["00000","01010","11111","11111","01110","00100","00000"],"^":["00100","01110","10101","00100","00100","00100","00100"],
-"_":["00100","00100","00100","00100","10101","01110","00100"],"#":["00000","01110","11111","11111","11111","01110","00000"]
+"_":["00100","00100","00100","00100","10101","01110","00100"],",":["00000","00000","00000","00000","01100","00100","01000"],"#":["00000","01110","11111","11111","11111","01110","00000"]
 };
 var TC = {}, TCN = 0;
 function tcan(s, col){
@@ -132,6 +132,8 @@ function sideTurtle(o, f){
     if (o.angry){ px(22,4,OUT); px(23,4,OUT); px(24,4,OUT); px(25,5,OUT); px(23,6,"#ff3030"); }
     if (o.glasses){ rect(22,5,4,2,"#000"); px(21,6,"#000"); px(20,6,"#000"); px(23,5,"#7fdcff"); }
     if (o.band){ rect(19,4,7,1,o.band); px(18,5,o.band); px(17,6,o.band); px(17,5,o.band); }
+    if (o.patch){ rect(22,5,3,2,"#000"); px(21,4,"#000"); px(20,4,"#000"); px(25,4,"#000"); }
+    if (o.robo){ px(23,6,"#ff3030"); px(24,6,"#ff3030"); px(24,5,"#ff3030"); px(22,1,"#ff3030"); px(22,2,"#bbbbbb"); px(22,3,"#bbbbbb"); rect(20,8,4,1,"#4b525a"); }
     if (o.crown){ rect(20,2,6,2,"#ffd23f"); px(20,1,"#ffd23f"); px(22,1,"#ffd23f"); px(24,1,"#ffd23f"); px(25,1,"#ffd23f"); px(22,2,"#e74c3c"); }
     for (y=0;y<10;y++) for (x=0;x<22;x++){
       if (!dome(x,y)) continue;
@@ -159,8 +161,25 @@ function topTurtle(k, shell, dark, f){
 }
 var T_SWIM = {k:"sw", shell:"#2fbf4f", dark:"#1b7a31", skin:"#9be564", belly:"#f2d16b"};
 var T_GOLD = {k:"go", shell:"#ffd23f", dark:"#c99400", skin:"#ffe9a0", belly:"#fff3c4"};
-var T_HERO = {k:"he", shell:"#2fbf4f", dark:"#1b7a31", skin:"#9be564", belly:"#f2d16b", glasses:true, band:"#ff3b3b"};
-var T_BOSS = {k:"bo", shell:"#a3222b", dark:"#5c0d12", skin:"#7d9a2d", belly:"#d9c27a", crown:true, angry:true, spikes:true};
+var HEROES = [
+  {k:"he", name:"SHELLY", shell:"#2fbf4f", dark:"#1b7a31", skin:"#9be564", belly:"#f2d16b", glasses:true, band:"#ff3b3b", need:0},
+  {k:"h1", name:"DASH", shell:"#3d8bfd", dark:"#1d4fa8", skin:"#9be564", belly:"#f2d16b", band:"#ffd23f", need:1},
+  {k:"h2", name:"PIRATE PETE", shell:"#8b5a2b", dark:"#4e2f12", skin:"#b5d97a", belly:"#e8d29a", patch:true, band:"#d62b2b", need:2},
+  {k:"h3", name:"ROBO", shell:"#9aa3ad", dark:"#4b525a", skin:"#6fd1c7", belly:"#cfd6dd", robo:true, need:3},
+  {k:"h4", name:"LAVA", shell:"#ff7b2f", dark:"#8a2a00", skin:"#ffcf6b", belly:"#ffe3a0", glasses:true, need:4},
+  {k:"h5", name:"COSMO", shell:"#8b5cf6", dark:"#4b23a8", skin:"#9be5ff", belly:"#e6d6ff", band:"#5cff8a", need:5},
+  {k:"h6", name:"GOLDIE", shell:"#ffd23f", dark:"#c99400", skin:"#fff0a8", belly:"#fff7d1", crown:true, glasses:true, need:7}
+];
+var BOSSES = [
+  {name:"KING SNAPPER", shell:"#a3222b", dark:"#5c0d12", skin:"#7d9a2d", belly:"#d9c27a", shot:"#ff7b2f"},
+  {name:"ICE SNAPPER", shell:"#5fc8ff", dark:"#1e6ea8", skin:"#c9f0ff", belly:"#ffffff", shot:"#bff4ff"},
+  {name:"LAVA SNAPPER", shell:"#ff5a1f", dark:"#7a1d00", skin:"#4a2a20", belly:"#ffb347", shot:"#ffd23f"},
+  {name:"ROBO SNAPPER", shell:"#9aa3ad", dark:"#4b525a", skin:"#6fd1c7", belly:"#cfd6dd", shot:"#5cff8a"},
+  {name:"SHADOW SNAPPER", shell:"#5b2a86", dark:"#2a0f45", skin:"#7d6a9a", belly:"#b9a3d9", shot:"#d58cff"}
+];
+function bossInfo(r){ return BOSSES[((r || (G ? G.round : 1)) - 1) % BOSSES.length]; }
+function bossSpr(open, f, r){ var b = bossInfo(r), i = ((r || (G ? G.round : 1)) - 1) % BOSSES.length;
+  return sideTurtle({k:"b" + i, shell:b.shell, dark:b.dark, skin:b.skin, belly:b.belly, crown:true, angry:true, spikes:true, open:open}, f); }
 function drawSpr(c, x, y, p, flip, alpha){
   if (alpha !== undefined) ctx.globalAlpha = Math.max(0, alpha);
   if (flip){ ctx.save(); ctx.translate(Math.round(x) + c.width*p, Math.round(y)); ctx.scale(-1,1); ctx.drawImage(c, 0, 0, c.width*p, c.height*p); ctx.restore(); }
@@ -184,66 +203,97 @@ function eggs(cx, cy, k, d){
 }
 
 /* ================= sound: tiny chiptune synth ================= */
-var AC = null, NOISE = null;
+/* iPad notes: Safari only starts audio from a touch that has ENDED (touchend), and the
+   silent switch mutes web audio unless the page asks for "playback" audio. Both are handled here. */
+var AC = null, NOISE = null, MASTER = null, SILENT = null;
+function silentWavURL(){
+  var n = 4000, b = new ArrayBuffer(44 + n), v = new DataView(b);
+  function s(o, str){ for (var i=0;i<str.length;i++) v.setUint8(o+i, str.charCodeAt(i)); }
+  s(0,"RIFF"); v.setUint32(4, 36+n, true); s(8,"WAVE"); s(12,"fmt "); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,8000,true); v.setUint32(28,8000,true); v.setUint16(32,1,true); v.setUint16(34,8,true); s(36,"data"); v.setUint32(40,n,true);
+  for (var i=0;i<n;i++) v.setUint8(44+i, 128);
+  return URL.createObjectURL(new Blob([b], {type:"audio/wav"}));
+}
 function unlockAudio(){
+  try { if (navigator.audioSession && navigator.audioSession.type !== "playback") navigator.audioSession.type = "playback"; } catch(e){}
   if (!AC){
     try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ AC = null; return; }
-    var len = AC.sampleRate, b = AC.createBuffer(1, len, AC.sampleRate), d = b.getChannelData(0);
+    var len = AC.sampleRate, nb = AC.createBuffer(1, len, AC.sampleRate), d = nb.getChannelData(0);
     for (var i=0;i<len;i++) d[i] = Math.random()*2-1;
-    NOISE = b;
-    var s = AC.createBufferSource(); s.buffer = AC.createBuffer(1,1,22050); s.connect(AC.destination); s.start(0);
+    NOISE = nb;
+    MASTER = AC.createGain(); MASTER.gain.value = 1;
+    if (AC.createDynamicsCompressor){ var comp = AC.createDynamicsCompressor(); MASTER.connect(comp); comp.connect(AC.destination); }
+    else MASTER.connect(AC.destination);
   }
-  if (AC.state === "suspended" && AC.resume) AC.resume();
+  if (AC.state !== "running" && AC.resume){ try { var pr = AC.resume(); if (pr && pr.catch) pr.catch(function(){}); } catch(e){} }
+  try { var s = AC.createBufferSource(); s.buffer = AC.createBuffer(1, 1, 22050); s.connect(AC.destination); s.start(0); } catch(e){}
+  /* older iPads: a looping silent <audio> switches the page to "playback" so the silent switch doesn't mute the game */
+  if (!navigator.audioSession && !SILENT){
+    try {
+      SILENT = new Audio(silentWavURL()); SILENT.loop = true; SILENT.setAttribute("playsinline", "");
+      var p2 = SILENT.play(); if (p2 && p2.catch) p2.catch(function(){ SILENT = null; });
+    } catch(e){ SILENT = null; }
+  }
 }
 function mtof(m){ return 440*Math.pow(2,(m-69)/12); }
 function tone(f, dur, type, vol, f2, when){
-  if (!AC) return;
+  if (!AC || AC.state !== "running") return;
   var t = when || AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
   o.type = type || "square"; o.frequency.setValueAtTime(f, t);
   if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
   g.gain.setValueAtTime(vol || 0.08, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur + 0.02);
+  o.connect(g); g.connect(MASTER); o.start(t); o.stop(t + dur + 0.02);
 }
-function noise(dur, vol, hp){
-  if (!AC || !NOISE) return;
-  var t = AC.currentTime, s = AC.createBufferSource(), g = AC.createGain(), fl = AC.createBiquadFilter();
-  s.buffer = NOISE; fl.type = hp ? "highpass" : "lowpass"; fl.frequency.setValueAtTime(hp ? 1200 : 2400, t);
+function noise(dur, vol, hp, when){
+  if (!AC || !NOISE || AC.state !== "running") return;
+  var t = when || AC.currentTime, s = AC.createBufferSource(), g = AC.createGain(), fl = AC.createBiquadFilter();
+  s.buffer = NOISE; fl.type = hp ? "highpass" : "lowpass"; fl.frequency.setValueAtTime(hp ? (hp === 2 ? 6000 : 1200) : 2400, t);
   if (!hp) fl.frequency.exponentialRampToValueAtTime(120, t + dur);
   g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  s.connect(fl); fl.connect(g); g.connect(AC.destination); s.start(t); s.stop(t + dur);
+  s.connect(fl); fl.connect(g); g.connect(MASTER); s.start(t, Math.random()*0.5); s.stop(t + dur);
 }
 function sfx(n, v){
   if (!AC) return;
   var t = AC.currentTime;
-  if (n === "blip") tone(mtof(72 + (v||0)), 0.12, "square", 0.07);
-  else if (n === "coin"){ tone(988, 0.07, "square", 0.07); tone(1319, 0.25, "square", 0.07, 0, t+0.07); }
-  else if (n === "laser") tone(1400, 0.25, "square", 0.06, 180);
-  else if (n === "boom") noise(0.45, 0.35);
-  else if (n === "tink"){ tone(2200, 0.06, "triangle", 0.12); tone(3000, 0.12, "triangle", 0.08, 0, t+0.06); }
-  else if (n === "hurt") tone(320, 0.45, "sawtooth", 0.09, 60);
-  else if (n === "jump") tone(300, 0.16, "square", 0.07, 900);
-  else if (n === "splash") noise(0.35, 0.25, true);
-  else if (n === "throw") tone(500, 0.3, "triangle", 0.12, 1500);
-  else if (n === "fanfare"){ var ns=[72,76,79,84]; for (var i=0;i<4;i++) tone(mtof(ns[i]), i===3?0.35:0.1, "square", 0.07, 0, t+i*0.09); }
-  else if (n === "oneup"){ var u=[76,79,88,84,86,91]; for (var j=0;j<6;j++) tone(mtof(u[j]), 0.1, "square", 0.06, 0, t+j*0.08); }
-  else if (n === "over"){ var o=[67,66,65,64]; for (var k=0;k<4;k++) tone(mtof(o[k]), k===3?0.6:0.22, "triangle", 0.12, 0, t+k*0.25); }
-  else if (n === "warn"){ for (var w=0;w<3;w++) tone(880, 0.18, "square", 0.06, 440, t+w*0.3); }
+  if (n === "blip") tone(mtof(72 + (v||0)), 0.12, "square", 0.09);
+  else if (n === "coin"){ tone(988, 0.07, "square", 0.09); tone(1319, 0.25, "square", 0.09, 0, t+0.07); }
+  else if (n === "laser") tone(1400, 0.25, "square", 0.08, 180);
+  else if (n === "boom") noise(0.45, 0.45);
+  else if (n === "tink"){ tone(2200, 0.06, "triangle", 0.15); tone(3000, 0.12, "triangle", 0.1, 0, t+0.06); }
+  else if (n === "hurt") tone(320, 0.45, "sawtooth", 0.11, 60);
+  else if (n === "jump") tone(300, 0.16, "square", 0.09, 900);
+  else if (n === "splash") noise(0.35, 0.3, 1);
+  else if (n === "throw") tone(500, 0.3, "triangle", 0.15, 1500);
+  else if (n === "skid"){ noise(0.5, 0.25, 1); tone(500, 0.5, "sawtooth", 0.06, 120); }
+  else if (n === "vroom") tone(110, 0.5, "sawtooth", 0.07, 330);
+  else if (n === "fanfare"){ var ns=[72,76,79,84]; for (var i=0;i<4;i++) tone(mtof(ns[i]), i===3?0.35:0.1, "square", 0.09, 0, t+i*0.09); }
+  else if (n === "oneup"){ var u=[76,79,88,84,86,91]; for (var j=0;j<6;j++) tone(mtof(u[j]), 0.1, "square", 0.08, 0, t+j*0.08); }
+  else if (n === "over"){ var o=[67,66,65,64]; for (var k=0;k<4;k++) tone(mtof(o[k]), k===3?0.6:0.22, "triangle", 0.15, 0, t+k*0.25); }
+  else if (n === "warn"){ for (var w=0;w<3;w++) tone(880, 0.18, "square", 0.08, 440, t+w*0.3); }
 }
+/* songs: lead + bass (played an octave up so iPad speakers can hear it) + drums (k=kick s=snare h=hat) */
 var SONGS = {
-  title:{bpm:132, lead:[72,0,76,79,84,0,79,76,74,0,77,81,86,0,81,77], bass:[48,0,48,0,55,0,55,0,53,0,53,0,55,0,55,0]},
-  game:{bpm:140, lead:[67,0,71,74,0,71,72,0,69,0,72,76,0,74,72,0], bass:[43,0,55,0,43,0,55,0,45,0,57,0,47,0,59,0]},
-  boss:{bpm:168, lead:[69,72,76,72,69,72,76,79,68,71,76,71,68,71,74,76], bass:[45,0,45,0,45,0,45,0,44,0,44,0,40,0,40,0]}
+  title:{bpm:132, lead:[72,0,76,79,84,0,79,76,74,0,77,81,86,0,81,77,76,0,79,84,88,0,84,79,77,76,74,72,74,0,0,0], bass:[48,0,48,0,55,0,55,0,53,0,53,0,55,0,55,0], drums:"k.h.s.h.k.h.s.hh"},
+  catch:{bpm:126, lead:[65,69,72,0,69,72,77,0,76,74,72,0,70,69,67,0,65,69,72,0,77,76,74,72,70,0,69,0,67,0,65,0], bass:[41,0,48,0,41,0,48,0,46,0,53,0,48,0,55,0], drums:"k.h.s.h.k.hks.h."},
+  invaders:{bpm:140, lead:[67,0,71,74,0,71,72,0,69,0,72,76,0,74,72,0], bass:[43,0,55,0,43,0,55,0,45,0,57,0,47,0,59,0], drums:"k.hhs.h.k.hhs.hh"},
+  hop:{bpm:150, lead:[67,71,74,79,0,74,71,0,72,76,79,84,0,79,76,0,74,78,81,86,0,81,78,0,79,0,74,0,71,0,67,0], bass:[43,0,50,0,43,0,50,0,48,0,55,0,50,0,57,0], drums:"k.h.s.h.k.h.s.h."},
+  racer:{bpm:176, lead:[69,0,69,72,0,69,76,74,72,0,72,74,0,72,71,67,69,0,69,72,0,76,79,81,79,76,74,72,71,72,74,0], bass:[45,45,57,45,45,57,45,57,43,43,55,43,43,55,43,55], drums:"k.hsk.hsk.hsk.ss"},
+  boss:{bpm:168, lead:[69,72,76,72,69,72,76,79,68,71,76,71,68,71,74,76], bass:[45,0,45,0,45,0,45,0,44,0,44,0,40,0,40,0], drums:"khskkhskkhskkhss"},
+  bonus:{bpm:120, lead:[84,79,76,79,84,88,84,0,83,79,74,79,83,86,83,0], bass:[48,0,55,0,52,0,55,0,47,0,55,0,50,0,55,0], drums:"k...s...k...s.h."}
 };
 var MUS = {song:null, name:"", next:0, step:0};
 function setSong(n){ if (MUS.name === n) return; MUS.name = n; MUS.song = SONGS[n] || null; MUS.step = 0; MUS.next = AC ? AC.currentTime + 0.05 : 0; }
 function musicTick(){
-  if (!AC || !D.music || !MUS.song) return;
+  if (!AC || AC.state !== "running" || !D.music || !MUS.song) return;
   var s = MUS.song, spb = 60/s.bpm/2;
   if (MUS.next < AC.currentTime) MUS.next = AC.currentTime + 0.02;
-  while (MUS.next < AC.currentTime + 0.15){
-    var i = MUS.step % s.lead.length;
-    if (s.lead[i]) tone(mtof(s.lead[i]), spb*0.8, "square", 0.022, 0, MUS.next);
-    if (s.bass[i]) tone(mtof(s.bass[i]), spb*0.9, "triangle", 0.07, 0, MUS.next);
+  while (MUS.next < AC.currentTime + 0.2){
+    var i = MUS.step, l = s.lead[i % s.lead.length], b = s.bass[i % s.bass.length], dr = s.drums.charAt(i % s.drums.length);
+    if (l) tone(mtof(l), spb*0.8, "square", 0.045, 0, MUS.next);
+    if (b) tone(mtof(b + 12), spb*0.9, "triangle", 0.16, 0, MUS.next);
+    if (dr === "k") tone(160, 0.12, "sine", 0.3, 50, MUS.next);
+    else if (dr === "s") noise(0.12, 0.12, 1, MUS.next);
+    else if (dr === "h") noise(0.04, 0.06, 2, MUS.next);
     MUS.next += spb; MUS.step++;
   }
 }
@@ -327,7 +377,7 @@ function choices(ans, a, b, n){
 
 /* ================= game flow ================= */
 var scene = "title", sceneT = 0, G = null, P = null, T = null, paused = false;
-var ORDER = ["catch", "invaders", "hop", "boss"], PROBS = {catch:3, invaders:3, hop:2, boss:5};
+var ORDER = ["catch", "invaders", "hop", "racer", "boss", "builder"], PROBS = {catch:3, invaders:3, hop:2, racer:5, boss:5, builder:1};
 function go(s){ scene = s; sceneT = 0; }
 function newGame(){
   G = {score:0, lives:3, combo:0, round:1, wave:0, stage:"catch", probN:0};
@@ -335,9 +385,9 @@ function newGame(){
   startWave();
 }
 function startWave(){
-  G.stage = ORDER[G.wave % 4]; G.probN = 0; TM = []; BN = null;
+  G.stage = ORDER[G.wave % ORDER.length]; G.probN = 0; TM = []; BN = null;
   go("intro");
-  if (G.stage === "boss"){ sfx("warn"); say("Warning! King Snapper is coming!"); }
+  if (G.stage === "boss"){ sfx("warn"); say("Warning! " + bossInfo().name.toLowerCase() + " is coming!"); }
   else say(ST[G.stage].speak);
 }
 function beginStage(){ go("play"); ST[G.stage].init(); ST[G.stage].problem(); }
@@ -360,10 +410,15 @@ function waveClear(){
   var bonus = 500 * G.round; G.score += bonus;
   var gotLife = G.lives < 5; if (gotLife) G.lives++;
   G.clearMsg = ["WAVE CLEAR!", "BONUS " + bonus, gotLife ? "1UP! @" : ""];
-  if (G.stage === "boss"){ G.clearMsg[0] = "BOSS BEATEN!"; }
-  sfx("oneup"); say(G.stage === "boss" ? "You beat King Snapper!" : "Wave clear!");
+  var said = "Wave clear!";
+  if (G.stage === "boss"){
+    G.clearMsg[0] = "BOSS BEATEN!"; D.bosses = (D.bosses || 0) + 1; D.unlock++; save();
+    for (var hi=0; hi<HEROES.length; hi++) if (HEROES[hi].need === D.bosses){ G.clearMsg[2] = "NEW HERO: " + HEROES[hi].name + "!"; said = "You unlocked a new hero, " + HEROES[hi].name.toLowerCase() + "!"; }
+  }
+  if (G.stage === "builder") G.clearMsg[0] = "BONUS DONE!";
+  sfx("oneup"); say(said);
   after(2.8, function(){
-    if (G.stage === "boss"){ G.round++; D.unlock++; D.best = Math.max(D.best||1, G.round); save(); }
+    if (G.stage === "builder"){ G.round++; D.best = Math.max(D.best||1, G.round); save(); }
     G.wave++; startWave();
   });
 }
@@ -566,7 +621,7 @@ ST.invaders = {
     }
     if (P.st === "fire" || P.st === "move"){ }
     if (P.st === "fire"){ ctx.fillStyle = Math.floor(time*30)%2 ? "#fff" : "#7ff"; ctx.fillRect(P.cx - 4, P.ly, 8, 640 - P.ly); }
-    drawSpr(topTurtle("hero", "#2fbf4f", "#1b7a31", Math.floor(time*4)%2), P.cx - 32, 664, 4);
+    drawSpr(heroTop(Math.floor(time*4)%2), P.cx - 32, 664, 4);
     ctx.fillStyle = "#c0c0c0"; ctx.fillRect(P.cx - 5, 646, 10, 26);
   }
 };
@@ -662,7 +717,7 @@ ST.hop = {
       }
     }
     var f = P.st === "jump" ? 1 : Math.floor(time*3)%2;
-    drawSpr(sideTurtle(T_HERO, f), P.tx - 54, P.ty - 82, 4);
+    drawSpr(sideTurtle(hero(), f), P.tx - 54, P.ty - 82, 4);
     ctx.fillStyle = "#777"; ctx.fillRect(W/2 - 70, 712, 140, 10);
     txt("0", W/2 - 160, 690, 4, "#fff", "c");
     txt(P.trail.join("  "), 24, 732, 3, "#ffd23f", "l");
@@ -671,13 +726,19 @@ ST.hop = {
 
 /* ================= STAGE 4: BOSS — KING SNAPPER (times facts) ================= */
 ST.boss = {
-  name:"KING SNAPPER", speak:"",
+  name:"BOSS", speak:"",
   tips:["BOSS BATTLE!", "ANSWER TIMES FACTS TO ATTACK.", "STUCK? TAP HELP TO SEE THE GROUPS."],
-  init:function(){ T = {hp:5, hit:0, proj:null, mouth:0, dying:0}; },
+  init:function(){ var hp = Math.min(7, 4 + G.round); T = {hp:hp, maxhp:hp, hit:0, proj:null, mouth:0, dying:0}; },
   problem:function(){
     var f = pickFact();
-    P = {a:f.a, b:f.b, key:f.a + "x" + f.b, ans:f.a*f.b, first:true, opts:choices(f.a*f.b, f.a, f.b, 4), no:[], hint:false, st:"ask", solved:false};
-    say(P.a + " times " + P.b + "?");
+    P = {a:f.a, b:f.b, key:f.a + "x" + f.b, ans:f.a*f.b, prod:f.a*f.b, first:true, opts:choices(f.a*f.b, f.a, f.b, 4), no:[], hint:false, st:"ask", solved:false, miss:false};
+    /* from round 3: missing-number questions (3 × ? = 12) */
+    if (G.round >= 3 && f.b > 1 && Math.random() < 0.35){
+      P.miss = true; P.ans = f.b; var c = [f.b], cand = shuffle([f.b+1, f.b-1, f.b+2, f.b-2, f.a, P.prod]);
+      for (var i=0;i<cand.length && c.length<4;i++) if (cand[i] > 0 && c.indexOf(cand[i]) < 0) c.push(cand[i]);
+      while (c.length < 4) c.push(c[c.length-1] + 3);
+      P.opts = shuffle(c); say(P.a + " times what equals " + P.prod + "?");
+    } else say(P.a + " times " + P.b + "?");
   },
   bossX:function(){ return W/2 - 148 + Math.sin(time*0.9)*90; },
   update:function(dt){
@@ -691,8 +752,8 @@ ST.boss = {
         if (p.good){
           T.hp--; T.hit = 0.4; SHAKE = 0.3; sfx("boom"); burst(this.bossX() + 150, 190, "#ffd23f", 30);
           P.solved = true; right(W/2, 300, 200);
-          say(P.a + " times " + P.b + " equals " + P.ans + "!");
-          if (T.hp <= 0){ T.dying = 2.6; say("You beat King Snapper!"); after(2.8, waveClear); }
+          say(P.a + " times " + P.b + " equals " + P.prod + "!");
+          if (T.hp <= 0){ T.dying = 2.6; say("You beat " + bossInfo().name.toLowerCase() + "!"); after(2.8, waveClear); }
           else after(1.7, function(){ ST.boss.problem(); });
         } else {
           burst(W/2, 680, "#ff7b2f", 24); var dead = wrong(); P.hint = true;
@@ -714,24 +775,15 @@ ST.boss = {
     starfield();
     var bx = this.bossX();
     if (T.dying <= 0 || Math.floor(time*12)%2){
-      var bs = sideTurtle(T_BOSS, Math.floor(time*2)%2 + (T.mouth > 0 ? 0 : 0));
-      if (T.mouth > 0) bs = sideTurtle({k:"bo", shell:T_BOSS.shell, dark:T_BOSS.dark, skin:T_BOSS.skin, belly:T_BOSS.belly, crown:true, angry:true, spikes:true, open:true}, 0);
+      var bs = T.mouth > 0 ? bossSpr(true, 0) : bossSpr(false, Math.floor(time*2)%2);
       if (T.hit > 0 && Math.floor(time*20)%2) ctx.globalAlpha = 0.4;
       drawSpr(bs, bx, 92, 11, true); ctx.globalAlpha = 1;
     }
-    txt("KING SNAPPER", W/2, 62, 2, "#ff9a9a", "c", 0);
-    for (var h=0;h<5;h++){ ctx.fillStyle = h < T.hp ? "#ff3b3b" : "#3a1010"; ctx.fillRect(W/2 - 140 + h*58, 78, 50, 10); }
-    var q = P.a + "×" + P.b + "=" + (P.solved ? P.ans : "?");
+    txt(bossInfo().name, W/2, 62, 2, "#ff9a9a", "c", 0);
+    for (var h=0;h<T.maxhp;h++){ ctx.fillStyle = h < T.hp ? "#ff3b3b" : "#3a1010"; ctx.fillRect(W/2 - (T.maxhp*58 - 8)/2 + h*58, 78, 50, 10); }
+    var q = P.miss ? P.a + "×" + (P.solved ? P.b : "?") + "=" + P.prod : P.a + "×" + P.b + "=" + (P.solved ? P.prod : "?");
     txt(q, W/2, 290, 10, P.solved ? "#5cff8a" : "#fff", "c");
-    if (P.hint || P.solved){
-      var d = 18, gp = 4, per = Math.min(P.b, 5), bw, bh, tot;
-      for (;;){ bw = per*(d+gp) + 10; tot = P.a*(bw+12) - 12; if (tot <= 960 || d <= 8) break; d -= 2; gp = d > 12 ? 4 : 3; }
-      bh = (P.b > 5 ? 2 : 1)*(d+gp) + 10; var x0 = W/2 - tot/2;
-      for (var gi=0; gi<P.a; gi++){
-        var gx = x0 + gi*(bw+12); ctx.fillStyle = "#1d2b5a"; ctx.fillRect(gx, 378, bw, bh);
-        for (var di=0; di<P.b; di++){ ctx.fillStyle = "#ffd23f"; ctx.fillRect(gx + 5 + (di%5)*(d+gp), 383 + Math.floor(di/5)*(d+gp), d, d); }
-      }
-    }
+    if (P.hint || P.solved) drawGroups(P.a, P.b, 378, 960, 18);
     for (var i=0;i<4;i++){
       var v = P.opts[i], x = W/2 - 440 + i*224, no = P.no.indexOf(v) >= 0;
       var col = no ? "#444" : (P.solved && v === P.ans) ? "#2fbf4f" : "#3d6fff";
@@ -739,15 +791,239 @@ ST.boss = {
       if (no){ ctx.fillStyle = "#ff5252"; ctx.fillRect(x + 20, 512, 160, 8); }
     }
     button("hint", 24, 640, 150, 80, "HELP", "#8b5cf6", 4);
-    drawSpr(sideTurtle(T_HERO, Math.floor(time*3)%2), W/2 - 68, 618, 5);
+    drawSpr(sideTurtle(hero(), Math.floor(time*3)%2), W/2 - 68, 618, 5);
     var p = T.proj;
     if (p){
       var px, py;
-      if (p.good){ px = lerp(W/2, bx + 150, p.t); py = lerp(640, 180, p.t); ctx.save(); ctx.translate(px, py); ctx.rotate(time*20); drawSpr(topTurtle("hero", "#2fbf4f", "#1b7a31", 0), -24, -26, 3); ctx.restore(); }
-      else { px = lerp(bx + 40, W/2, p.t); py = lerp(200, 650, p.t); ctx.fillStyle = "#ff7b2f"; ctx.fillRect(px - 16, py - 16, 32, 32); ctx.fillStyle = "#ffd23f"; ctx.fillRect(px - 8, py - 8, 16, 16); }
+      if (p.good){ px = lerp(W/2, bx + 150, p.t); py = lerp(640, 180, p.t); ctx.save(); ctx.translate(px, py); ctx.rotate(time*20); drawSpr(heroTop(0), -24, -26, 3); ctx.restore(); }
+      else { px = lerp(bx + 40, W/2, p.t); py = lerp(200, 650, p.t); ctx.fillStyle = bossInfo().shot; ctx.fillRect(px - 16, py - 16, 32, 32); ctx.fillStyle = "#ffd23f"; ctx.fillRect(px - 8, py - 8, 16, 16); }
     }
   }
 };
+
+/* ================= STAGE 4: SHELL RACER (match pictures, turn-arounds, skip counts, facts) ================= */
+var LANES = [312, 512, 712];
+ST.racer = {
+  name:"SHELL RACER", speak:"Shell racer! Tap a lane to steer. At each gate, drive through the right answer!",
+  tips:["TAP A LANE TO STEER.", "GRAB GOLDEN EGGS FOR POINTS.", "AT A GATE, PICK THE RIGHT ANSWER!"],
+  init:function(){ T = {scroll:0, spd:0, lane:1, kx:LANES[1], spin:0, boost:0, eggs:[], fin:-9999, finDone:false, types:[]}; },
+  problem:function(){
+    if (!T.types.length) T.types = shuffle(["pic", "turn", "skip", "fact"]);
+    var f = pickFact(), a = f.a, b = f.b, ans = a*b, type = T.types.pop(), signs, prompt = "", i;
+    if (type === "turn" && a === b) type = "fact";
+    if (type === "skip" && a < 3) type = "pic";
+    if (type === "pic"){ signs = [a + "×" + b, a + "+" + b, Math.random() < 0.5 ? (a+1) + "×" + b : a + "×" + (b+1)]; prompt = "WHICH ONE MATCHES?"; }
+    else if (type === "turn"){ signs = [b + "×" + a, a + "+" + b, a === 1 ? "2×" + b : b + "×" + b]; prompt = "SAME AS " + a + "×" + b + "?"; }
+    else if (type === "skip"){
+      var seq = []; for (i = Math.max(1, a-4); i < a; i++) seq.push(i*b);
+      prompt = seq.join(" ") + " ?";
+      var w2 = ans + b === ans + 1 ? ans - 1 : ans + b; signs = [String(ans), String(ans + 1), String(w2 > 0 ? w2 : ans + 2)];
+    } else {
+      prompt = a + "×" + b + "=?"; var c = choices(ans, a, b, 3); signs = [String(ans)];
+      for (i=0;i<c.length;i++) if (c[i] !== ans) signs.push(String(c[i]));
+    }
+    var order = shuffle([0,1,2]), s2 = [], ok = 0;
+    for (i=0;i<3;i++){ s2.push(signs[order[i]]); if (order[i] === 0) ok = i; }
+    P = {a:a, b:b, ans:ans, key:f.a + "x" + f.b, type:type, prompt:prompt, signs:s2, ok:ok, first:true, st:"drive", gy:-760, picked:-1};
+    T.eggs = []; for (i=0;i<4;i++) T.eggs.push({lane:rnd(0,2), y:-120 - i*150, got:false});
+    if (type === "pic") say("Which one matches? " + a + (a === 1 ? " group" : " groups") + " of " + b + ".");
+    else if (type === "turn") say("Which one is the same as " + a + " times " + b + "?");
+    else if (type === "skip") say("Count by " + b + "s. What comes next?");
+    else say(a + " times " + b + "?");
+  },
+  update:function(dt){
+    var target = (P.st === "choose" || P.st === "dead") ? 0 : (T.boost > 0 ? 600 : 320);
+    T.spd += (target - T.spd)*Math.min(1, dt*(target ? 2 : 5));
+    if (T.boost > 0) T.boost -= dt;
+    if (T.spin > 0) T.spin -= dt;
+    var dy = T.spd*dt; T.scroll += dy;
+    if (P.st !== "choose") P.gy += dy;
+    for (var e=0;e<T.eggs.length;e++){
+      var eg = T.eggs[e]; eg.y += dy;
+      if (!eg.got && eg.lane === T.lane && eg.y > 560 && eg.y < 670 && T.spin <= 0){ eg.got = true; G.score += 50; float("+50", LANES[eg.lane], 540, 3, "#ffd23f"); sfx("coin"); }
+    }
+    T.kx += (LANES[T.lane] - T.kx)*Math.min(1, dt*10);
+    if (P.st === "drive" && P.gy >= 300){ P.gy = 300; P.st = "choose"; }
+    if (P.st === "go" && P.gy >= 560){
+      P.st = "passed";
+      var a = P.a, b = P.b, n = P.ans;
+      if (T.lane === P.ok){
+        T.boost = 1.2; sfx("coin"); sfx("vroom"); burst(LANES[P.ok], 560, "#5cff8a", 24); float("TURBO!", LANES[P.ok], 470, 5, "#ff7bd5");
+        right(LANES[P.ok], 420, 120);
+        if (P.type === "pic") say("Yes! " + a + " groups of " + b + " is " + a + " times " + b + ".");
+        else if (P.type === "turn") say("Yes! " + a + " times " + b + " and " + b + " times " + a + " are both " + n + "!");
+        else if (P.type === "skip") say("Yes! " + n + "!");
+        else say(a + " times " + b + " equals " + n + "!");
+      } else {
+        T.spin = 1; sfx("skid"); burst(T.kx, 620, "#bbbbbb", 20); float("SPIN OUT!", T.kx, 470, 5, "#ff5252");
+        var dead = wrong(); P.missed = true;
+        if (P.type === "pic") say(a + " groups of " + b + " is " + a + " times " + b + ". Not plus!");
+        else if (P.type === "turn") say("Turn it around! " + a + " times " + b + " is the same as " + b + " times " + a + ".");
+        else if (P.type === "skip") say("Count " + b + " more. It's " + n + ".");
+        else say(a + " times " + b + " is " + n + ". Count by " + b + "s.");
+        if (dead){ P.st = "dead"; return; }
+      }
+    }
+    if (P.st === "passed" && P.gy > 980){
+      if (G.probN >= PROBS.racer){ P.st = "finish"; T.fin = -260; T.eggs = []; }
+      else this.problem();
+    }
+    if (P.st === "finish"){
+      T.fin += dy;
+      if (T.fin > 600 && !T.finDone){ T.finDone = true; banner("FINISH!"); sfx("fanfare"); say("Finish line! Great driving!"); after(1.8, waveClear); }
+    }
+  },
+  tap:function(x, y){
+    if (P.st === "dead" || T.spin > 0) return;
+    var l = x < 412 ? 0 : x < 612 ? 1 : 2;
+    if (P.st === "choose"){ T.lane = l; P.picked = l; P.st = "go"; sfx("blip", l*4); return; }
+    if (T.lane !== l){ T.lane = l; sfx("blip", 2); }
+  },
+  sign:function(i, x, y){
+    var s = P.signs[i], col = "#1d2b5a";
+    if (P.st === "passed" || P.st === "finish") col = i === P.ok ? "#2fbf4f" : (i === P.picked ? "#d6453a" : "#1d2b5a");
+    else if (P.st === "choose" && Math.floor(time*3)%2) col = "#3d4f8a";
+    ctx.fillStyle = "#000"; ctx.fillRect(x - 81, y - 31, 170, 70);
+    ctx.fillStyle = "#ffd23f"; ctx.fillRect(x - 85, y - 35, 170, 70);
+    ctx.fillStyle = col; ctx.fillRect(x - 79, y - 29, 158, 58);
+    var p = s.length > 5 ? 4 : 5;
+    txt(s, x, y - 3.5*p, p, "#fff", "c");
+  },
+  draw:function(){
+    var off = T.scroll % 64, y, i;
+    ctx.fillStyle = "#2e8b3a"; ctx.fillRect(0, 0, W, H);
+    for (y = -64; y < H; y += 64){ ctx.fillStyle = "#287c33"; ctx.fillRect(0, y + off, 212, 32); ctx.fillRect(812, y + off, 212, 32); }
+    var toff = T.scroll % 200;
+    for (y = -200; y < H; y += 200){
+      for (var side=0; side<2; side++){
+        var tx = side ? 900 : 60;
+        ctx.fillStyle = "#0f5a1e"; ctx.fillRect(tx, y + toff, 64, 56); ctx.fillStyle = "#1b7a31"; ctx.fillRect(tx + 8, y + toff - 8, 48, 40);
+        ctx.fillStyle = "#6b4423"; ctx.fillRect(tx + 26, y + toff + 56, 12, 20);
+      }
+    }
+    ctx.fillStyle = "#3d3d46"; ctx.fillRect(212, 0, 600, H);
+    for (y = -64; y < H; y += 64){
+      ctx.fillStyle = "#e23"; ctx.fillRect(196, y + off, 16, 32); ctx.fillRect(812, y + off, 16, 32);
+      ctx.fillStyle = "#fff"; ctx.fillRect(196, y + off + 32, 16, 32); ctx.fillRect(812, y + off + 32, 16, 32);
+      ctx.fillStyle = "#cfcfcf"; ctx.fillRect(408, y + off, 8, 32); ctx.fillRect(608, y + off, 8, 32);
+    }
+    for (var e=0;e<T.eggs.length;e++){
+      var eg = T.eggs[e]; if (eg.got || eg.y < -40 || eg.y > H) continue;
+      var ex = LANES[eg.lane];
+      ctx.fillStyle = "#3b2414"; ctx.fillRect(ex - 14, eg.y - 18, 28, 36);
+      ctx.fillStyle = "#ffd23f"; ctx.fillRect(ex - 11, eg.y - 15, 22, 30);
+      ctx.fillStyle = "#fff6c0"; ctx.fillRect(ex - 7, eg.y - 11, 6, 8);
+    }
+    if (T.fin > -300){
+      for (var cx=0; cx<600; cx+=30) for (var cy=0; cy<2; cy++){ ctx.fillStyle = ((cx/30 + cy) % 2) ? "#fff" : "#000"; ctx.fillRect(212 + cx, T.fin + cy*30, 30, 30); }
+    }
+    if (P.st !== "finish" && P.gy > -120 && P.gy < H + 60){
+      ctx.fillStyle = "#555"; ctx.fillRect(200, P.gy - 90, 12, 130); ctx.fillRect(812, P.gy - 90, 12, 130);
+      ctx.fillStyle = "#8b5cf6"; ctx.fillRect(200, P.gy - 96, 624, 22);
+      txt("GATE " + Math.min(G.probN + 1, PROBS.racer) + "/" + PROBS.racer, W/2, P.gy - 92, 2, "#fff", "c", 0);
+      for (i=0;i<3;i++) this.sign(i, LANES[i], P.gy);
+    }
+    if (T.boost > 0){ for (var fl=0; fl<3; fl++){ ctx.fillStyle = fl%2 ? "#ffd23f" : "#ff7b2f"; ctx.fillRect(T.kx - 24 + fl*18, 690 + rnd(0,20), 12, 24 + rnd(0,20)); } }
+    ctx.save(); ctx.translate(T.kx, 640);
+    if (T.spin > 0) ctx.rotate((1 - T.spin)*Math.PI*4);
+    ctx.fillStyle = "#111"; ctx.fillRect(-46, -40, 14, 26); ctx.fillRect(32, -40, 14, 26); ctx.fillRect(-46, 18, 14, 26); ctx.fillRect(32, 18, 14, 26);
+    ctx.fillStyle = "#d62b2b"; ctx.fillRect(-34, -50, 68, 100); ctx.fillStyle = "#ff6b6b"; ctx.fillRect(-34, -50, 68, 8);
+    drawSpr(heroTop(Math.floor(time*6)%2), -32, -38, 4);
+    ctx.restore();
+    ctx.fillStyle = "rgba(0,0,0,.72)"; ctx.fillRect(0, 52, W, 112);
+    if (P.st === "finish"){ txt("FINISH LINE!", W/2, 84, 6, "#ffd23f", "c"); return; }
+    if (P.type === "pic"){ txt(P.prompt, W/2, 60, 3, "#8cf", "c"); drawGroups(P.a, P.b, 86, 900, 22); }
+    else if (P.type === "skip"){ txt("COUNT BY " + P.b + "S", W/2, 60, 3, "#8cf", "c"); txt(P.prompt, W/2, 96, 7, "#fff", "c"); }
+    else if (P.type === "turn"){ txt("TURN-AROUND FACT", W/2, 60, 3, "#8cf", "c"); txt(P.prompt, W/2, 96, 7, "#fff", "c"); }
+    else { txt("TIMES FACT", W/2, 60, 3, "#8cf", "c"); txt(P.prompt, W/2, 96, 7, "#fff", "c"); }
+    if (P.st === "choose" && Math.floor(time*3)%2) txt("TAP A LANE TO PICK!", W/2, 400, 4, "#ffd23f", "c");
+  }
+};
+
+/* ================= BONUS STAGE: EGG BUILDER (find every way to make a number) ================= */
+ST.builder = {
+  name:"EGG BUILDER", speak:"Bonus stage! Build rows of eggs to make the number. Find every way!",
+  tips:["BONUS STAGE! NO HEARTS TO LOSE.", "BUILD ROWS OF EGGS TO MAKE THE NUMBER.", "FIND EVERY WAY YOU CAN!"],
+  init:function(){ T = {}; },
+  problem:function(){
+    var lists = [[6,8,10,12],[12,16,18,20],[12,18,20,24,30]], N = pick(lists[Math.min(2, G.round-1)]), ways = [];
+    for (var r=1;r<=10;r++) if (N % r === 0 && N/r <= 10) ways.push(r + "×" + (N/r));
+    P = {N:N, r:1, c:1, ways:ways, found:[], st:"build", first:true, key:null, pop:0};
+    say("Make " + N + "! Build rows of eggs.");
+  },
+  btn:function(id){
+    if (P.st !== "build") return;
+    if (id === "r+" && P.r < 10) P.r++; else if (id === "r-" && P.r > 1) P.r--;
+    else if (id === "c+" && P.c < 10) P.c++; else if (id === "c-" && P.c > 1) P.c--;
+    else if (id === "bdone"){ P.st = "done"; say("Bonus done!"); after(0.6, waveClear); return; }
+    var k = P.r + "×" + P.c;
+    if (P.r*P.c === P.N && P.found.indexOf(k) < 0){
+      P.found.push(k); P.pop = 0.6; G.score += 300; float("+300", 670, 300, 5, "#ffd23f"); sfx("fanfare"); burst(670, 350, "#ffd23f", 30);
+      if (P.found.length === P.ways.length){ P.st = "done"; G.score += 1000; banner("PERFECT!"); say("Perfect! You found every way to make " + P.N + "!"); after(2.8, waveClear); }
+      else {
+        var t = P.c + "×" + P.r, turn = P.found.indexOf(t) < 0 && P.ways.indexOf(t) >= 0;
+        say(P.r + (P.r === 1 ? " row" : " rows") + " of " + P.c + " make " + P.N + "! " + (turn ? "Now turn it around!" : "Find another way!"));
+      }
+    } else say(String(P.r*P.c));
+  },
+  update:function(dt){ if (P.pop > 0) P.pop -= dt; },
+  tap:function(){},
+  draw:function(){
+    starfield();
+    var match = P.r*P.c === P.N;
+    txt("MAKE " + P.N, W/2, 64, 7, "#ffd23f", "c");
+    txt("ROWS", 165, 150, 3, "#8cf", "c");
+    button("r-", 30, 180, 80, 80, "-", "#3d6fff", 6); txt(String(P.r), 165, 196, 7, "#fff", "c"); button("r+", 220, 180, 80, 80, "+", "#3d6fff", 6);
+    txt("IN EACH ROW", 165, 300, 3, "#8cf", "c");
+    button("c-", 30, 330, 80, 80, "-", "#3d6fff", 6); txt(String(P.c), 165, 346, 7, "#fff", "c"); button("c+", 220, 330, 80, 80, "+", "#3d6fff", 6);
+    txt(P.r + "×" + P.c + "=" + (P.r*P.c), 165, 460, 5, match ? "#5cff8a" : "#fff", "c");
+    var d = Math.max(12, Math.min(40, Math.floor(Math.min(620/P.c, 400/P.r)) - 8)), gp = Math.max(4, d/4|0);
+    var gw = P.c*(d+gp) - gp, gh = P.r*(d+gp) - gp, x0 = 670 - gw/2, y0 = 340 - gh/2;
+    ctx.fillStyle = match ? "rgba(92,255,138,.15)" : "rgba(255,255,255,.06)"; ctx.fillRect(x0 - 14, y0 - 14, gw + 28, gh + 28);
+    for (var r=0;r<P.r;r++) for (var c=0;c<P.c;c++){
+      var ex = x0 + c*(d+gp), ey = y0 + r*(d+gp);
+      ctx.fillStyle = "#3b2414"; ctx.fillRect(ex - 2, ey - 2, d + 4, d + 4);
+      ctx.fillStyle = match ? "#ffd23f" : "#fff6d5"; ctx.fillRect(ex, ey, d, d);
+      ctx.fillStyle = "#fff"; ctx.fillRect(ex + 2, ey + 2, Math.max(3, d/3|0), Math.max(3, d/3|0));
+    }
+    txt("WAYS FOUND: " + P.found.length + "/" + P.ways.length, 670, 568, 3, "#ff7bd5", "c");
+    var chips = P.found.join("  ");
+    if (chips) txt(chips, 670, 604, 4, "#5cff8a", "c");
+    var last = P.found[P.found.length-1];
+    if (last){ var pr = last.split("×"), t2 = pr[1] + "×" + pr[0];
+      if (P.found.indexOf(t2) < 0 && P.ways.indexOf(t2) >= 0 && Math.floor(time*2)%2) txt("TIP: TURN IT AROUND!", 165, 530, 2, "#ffd23f", "c"); }
+    if (P.found.length >= 1 && P.st === "build") button("bdone", W - 230, 664, 200, 76, "DONE", "#2fbf4f", 4);
+  }
+};
+
+/* ================= heroes ================= */
+function heroUnlocked(i){ return (D.bosses || 0) >= HEROES[i].need; }
+function hero(){ var i = D.hero || 0; if (!HEROES[i] || !heroUnlocked(i)) i = 0; return HEROES[i]; }
+function heroTop(f){ var h = hero(); return topTurtle("hero" + h.k, h.shell, h.dark, f); }
+function drawHeroes(){
+  starfield();
+  txt("PICK YOUR HERO", W/2, 40, 6, "#ffd23f", "c");
+  txt("BOSSES BEATEN: " + (D.bosses || 0), W/2, 100, 3, "#8cf", "c");
+  for (var i=0;i<HEROES.length;i++){
+    var h = HEROES[i], col = i % 4, row = Math.floor(i/4), n = row ? HEROES.length - 4 : 4;
+    var x = W/2 - (n*225 - 15)/2 + col*225, y = 140 + row*260, on = heroUnlocked(i), sel = hero() === h;
+    ctx.fillStyle = sel ? "#ffd23f" : "#000"; ctx.fillRect(x - 6, y - 6, 222, 242);
+    ctx.fillStyle = sel ? "#3d6fff" : "#1d2b5a"; ctx.fillRect(x, y, 210, 230);
+    if (on){ drawSpr(sideTurtle(h, Math.floor(time*4 + i)%2), x + 24, y + 40, 6); txt(h.name, x + 105, y + 180, 3, "#fff", "c"); }
+    else { drawSpr(sideTurtle(h, 0), x + 24, y + 40, 6, false, 0.12); txt("LOCKED", x + 105, y + 150, 3, "#ff5252", "c"); txt("BEAT " + h.need + (h.need === 1 ? " BOSS" : " BOSSES"), x + 105, y + 190, 2, "#aaa", "c"); }
+    hot("hero" + i, x, y, 210, 230);
+  }
+  button("hback", W/2 - 150, 676, 300, 76, "BACK", "#2fbf4f", 4);
+}
+function drawGroups(a, b, y, maxW, d0){
+  var d = d0, gp = 4, per = Math.min(b, 5), bw, tot;
+  for (;;){ gp = d > 12 ? 4 : 3; bw = per*(d+gp) + 10; tot = a*(bw+12) - 12; if (tot <= maxW || d <= 6) break; d -= 2; }
+  var bh = (b > 5 ? 2 : 1)*(d+gp) + 10, x0 = W/2 - tot/2;
+  for (var gi=0; gi<a; gi++){
+    var gx = x0 + gi*(bw+12); ctx.fillStyle = "#1d2b5a"; ctx.fillRect(gx, y, bw, bh);
+    for (var di=0; di<b; di++){ ctx.fillStyle = "#ffd23f"; ctx.fillRect(gx + 5 + (di%5)*(d+gp), y + 5 + Math.floor(di/5)*(d+gp), d, d); }
+  }
+}
 
 /* ================= drawing the screens ================= */
 function hud(){
@@ -770,21 +1046,25 @@ function drawTitle(){
   txt("HIGH SCORES", W/2, 430, 3, "#ff7bd5", "c");
   for (var k=0;k<D.hi.length;k++){ var h = D.hi[k]; txt((k+1) + ". " + h.n + "  " + pad(h.s, 6), W/2, 466 + k*32, 3, k === 0 ? "#ffd23f" : "#fff", "c"); }
   var sx = ((time*90) % (W + 300)) - 150;
-  drawSpr(sideTurtle(T_HERO, Math.floor(time*5)%2), sx, 640, 4);
+  drawSpr(sideTurtle(hero(), Math.floor(time*5)%2), sx, 640, 4);
   button("music", W - 250, 680, 110, 60, D.music ? "MUSIC" : "MUSIC X", D.music ? "#3d6fff" : "#555", 2);
   button("voice", W - 130, 680, 110, 60, D.voice ? "VOICE" : "VOICE X", D.voice ? "#3d6fff" : "#555", 2);
+  button("heroes", 170, 680, 170, 60, "HEROES", "#8b5cf6", 3);
   hot("parent", 0, 680, 140, 88); txt("GROWN-UPS", 16, 734, 2, "#556", "l", 0);
 }
 function drawIntro(){
   starfield();
   var s = ST[G.stage], boss = G.stage === "boss";
-  txt("ROUND " + G.round + "  STAGE " + (G.wave%4 + 1), W/2, 96, 4, "#8cf", "c");
+  txt("ROUND " + G.round + "  " + (G.stage === "builder" ? "BONUS STAGE" : "STAGE " + (G.wave % ORDER.length + 1)), W/2, 96, 4, "#8cf", "c");
   if (boss && Math.floor(time*4)%2) txt("WARNING!", W/2, 150, 8, "#ff3b3b", "c");
-  txt(s.name, W/2, boss ? 230 : 170, 7, boss ? "#ff9a9a" : "#ffd23f", "c");
+  txt(boss ? bossInfo().name : s.name, W/2, boss ? 230 : 170, 7, boss ? "#ff9a9a" : "#ffd23f", "c");
   if (G.stage === "catch"){ var t = sideTurtle(T_SWIM, Math.floor(time*4)%2); drawSpr(t, W/2 - 81, 280, 6); eggs(W/2 - 81 + 66, 280 + 36, 3, 12); }
   else if (G.stage === "invaders"){ for (var r=0;r<2;r++) for (var c=0;c<4;c++) drawSpr(topTurtle("r" + r, ROWC[r][0], ROWC[r][1], (Math.floor(time*2.5)+r)%2), W/2 - 160 + c*84, 270 + r*72, 4); }
-  else if (G.stage === "hop"){ drawSpr(sideTurtle(T_HERO, Math.floor(time*4)%2), W/2 - 81, 290 - Math.abs(Math.sin(time*4))*40, 6); }
-  else drawSpr(sideTurtle(T_BOSS, Math.floor(time*2)%2), W/2 - 148, 300, 11, true);
+  else if (G.stage === "hop"){ drawSpr(sideTurtle(hero(), Math.floor(time*4)%2), W/2 - 81, 290 - Math.abs(Math.sin(time*4))*40, 6); }
+  else if (G.stage === "racer"){ ctx.save(); ctx.translate(W/2, 340); ctx.fillStyle = "#111"; ctx.fillRect(-46,-40,14,26); ctx.fillRect(32,-40,14,26); ctx.fillRect(-46,18,14,26); ctx.fillRect(32,18,14,26);
+    ctx.fillStyle = "#d62b2b"; ctx.fillRect(-34,-50,68,100); drawSpr(heroTop(Math.floor(time*6)%2), -32, -38, 4); ctx.restore(); }
+  else if (G.stage === "builder"){ for (var er=0; er<3; er++) for (var ec=0; ec<4; ec++){ var ex = W/2 - 110 + ec*58, ey = 270 + er*58; ctx.fillStyle = "#3b2414"; ctx.fillRect(ex-3, ey-3, 46, 46); ctx.fillStyle = Math.floor(time*3 + er + ec)%4 ? "#fff6d5" : "#ffd23f"; ctx.fillRect(ex, ey, 40, 40); } }
+  else drawSpr(bossSpr(false, Math.floor(time*2)%2), W/2 - 148, 300, 11, true);
   if (!boss) for (var i=0;i<s.tips.length;i++) txt(s.tips[i], W/2, 450 + i*44, 3, "#fff", "c");
   else txt(s.tips[1], W/2, 490, 3, "#fff", "c");
   if (sceneT > 0.6 && Math.floor(time*2.2)%2) txt("TAP TO START", W/2, 640, 5, "#5cff8a", "c");
@@ -855,7 +1135,7 @@ var resetArm = false;
 function drawParent(){
   ctx.fillStyle = "#0b1030"; ctx.fillRect(0, 0, W, H);
   txt("GROWN-UPS", W/2, 40, 6, "#fff", "c");
-  txt("BEST ROUND: " + (D.best||1) + "    FACT LEVEL: " + (3 + D.unlock > 11 ? 11 : 3 + D.unlock) + "/11", W/2, 110, 3, "#8cf", "c");
+  txt("BEST ROUND: " + (D.best||1) + "   BOSSES: " + (D.bosses||0) + "   FACT LEVEL: " + (3 + D.unlock > 11 ? 11 : 3 + D.unlock) + "/11", W/2, 110, 3, "#8cf", "c");
   txt("TIMES FACTS (GREEN = KNOWS IT)", W/2, 160, 2, "#aaa", "c");
   var bs = [1,2,3,4,5,10];
   for (var a=1;a<=10;a++) txt(a + "×", 220 + (a-1)*66, 196, 2, "#aaa", "c", 0);
@@ -882,9 +1162,13 @@ function onBtn(id){
   if (id === "voice"){ D.voice = !D.voice; save(); if (!D.voice && window.speechSynthesis) speechSynthesis.cancel(); return; }
   if (id === "parent"){ parentHold = time; return; }
   if (id === "pclose"){ resetArm = false; go("title"); return; }
-  if (id === "preset"){ if (resetArm){ var m = D.music, v = D.voice; D = freshSave(); D.music = m; D.voice = v; save(); resetArm = false; } else resetArm = true; return; }
+  if (id === "preset"){ if (resetArm){ var m = D.music, v = D.voice; D = freshSave(); D.music = m; D.voice = v; D.hero = 0; save(); resetArm = false; } else resetArm = true; return; }
+  if (id === "r-" || id === "r+" || id === "c-" || id === "c+" || id === "bdone"){ ST.builder.btn(id); return; }
+  if (id === "heroes"){ go("heroes"); return; }
+  if (id === "hback"){ go("title"); return; }
+  if (id.indexOf("hero") === 0){ var hx = +id.substring(4); if (heroUnlocked(hx)){ D.hero = hx; save(); sfx("coin"); say(HEROES[hx].name.toLowerCase()); } else say("Beat " + HEROES[hx].need + " bosses to unlock this hero."); return; }
   if (id.indexOf("ans") === 0){ ST.boss.answer(+id.charAt(3)); return; }
-  if (id === "hint"){ if (!P.hint){ P.hint = true; P.first = false; say(P.a + " groups of " + P.b + ". Count by " + P.b + "s."); } return; }
+  if (id === "hint"){ if (!P.hint){ P.hint = true; P.first = false; say(P.miss ? P.prod + " split into " + P.a + " equal groups. How many in each group?" : P.a + " groups of " + P.b + ". Count by " + P.b + "s."); } return; }
   if (id.indexOf("up") === 0){ var i = +id.charAt(2); IN.l[i] = (IN.l[i] + 1) % 26; return; }
   if (id.indexOf("dn") === 0){ var j = +id.charAt(2); IN.l[j] = (IN.l[j] + 25) % 26; return; }
   if (id === "ok"){
@@ -906,7 +1190,8 @@ function tap(x, y){
 function release(){ parentHold = -1; }
 function toStage(cx, cy){ return {x:(cx - OX)/SC, y:(cy - OY)/SC}; }
 cv.addEventListener("touchstart", function(e){ e.preventDefault(); var t = e.changedTouches[0], p = toStage(t.clientX, t.clientY); tap(p.x, p.y); }, {passive:false});
-cv.addEventListener("touchend", function(e){ e.preventDefault(); release(); }, {passive:false});
+cv.addEventListener("touchend", function(e){ e.preventDefault(); unlockAudio(); release(); }, {passive:false});
+document.addEventListener("visibilitychange", function(){ if (!document.hidden && AC && AC.state !== "running" && AC.resume) try { AC.resume(); } catch(e){} });
 cv.addEventListener("mousedown", function(e){ var p = toStage(e.clientX, e.clientY); tap(p.x, p.y); });
 cv.addEventListener("mouseup", release);
 document.addEventListener("visibilitychange", function(){ if (document.hidden && scene === "play") paused = true; });
@@ -916,7 +1201,8 @@ var last = 0;
 function update(dt){
   time += dt; sceneT += dt;
   if (parentHold >= 0 && time - parentHold > 1){ parentHold = -1; resetArm = false; go("parent"); }
-  var song = scene === "title" ? "title" : (scene === "play" || scene === "intro" || scene === "clear") ? (G && G.stage === "boss" ? "boss" : "game") : "";
+  var SMAP = {catch:"catch", invaders:"invaders", hop:"hop", racer:"racer", boss:"boss", builder:"bonus"};
+  var song = (scene === "title" || scene === "heroes") ? "title" : (scene === "play" || scene === "intro" || scene === "clear") ? (G ? SMAP[G.stage] : "") : "";
   setSong(paused ? "" : song); musicTick();
   if (paused) return;
   if (scene === "play" || scene === "clear" || scene === "over"){
@@ -946,6 +1232,7 @@ function draw(){
   else if (scene === "initials") drawInitials();
   else if (scene === "board") drawBoard();
   else if (scene === "parent") drawParent();
+  else if (scene === "heroes") drawHeroes();
   if (scene === "play" || scene === "clear") drawOverlayText();
   if (FLASH > 0){ ctx.fillStyle = "rgba(255,0,0," + (FLASH*1.4).toFixed(2) + ")"; ctx.fillRect(0, 0, W, H); }
   if (paused){ B = []; drawPause(); }
@@ -959,7 +1246,7 @@ function frame(ts){
 }
 requestAnimationFrame(frame);
 
-window.__tt = { get:function(){ return {scene:scene, G:G, P:P, T:T, paused:paused, D:D}; }, tap:tap, wave:function(n){ newGame(); G.wave = n; startWave(); } };
+window.__tt = { get:function(){ return {scene:scene, G:G, P:P, T:T, paused:paused, D:D}; }, tap:tap, wave:function(n){ newGame(); G.wave = n; startWave(); }, audio:function(){ return {state: AC ? AC.state : "none", step: MUS.step, song: MUS.name}; } };
 })();
 </script>
 </body>
